@@ -147,6 +147,13 @@ export default function TabLayout() {
           title: 'Policy'
         }} 
       />
+      <Tabs.Screen 
+        name="buyers-management" 
+        options={{
+          href: null,
+          title: 'Buyers Management'
+        }} 
+      />
     </Tabs>
       <TourOverlay />
     </>

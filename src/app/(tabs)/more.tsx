@@ -317,8 +317,8 @@ export default function MoreMenuScreen() {
             title="Buyers Management"
             subtitle="View scanned visitor leads and contacts"
             iconBg="#f0fdfa" iconColor="#14b8a6"
-            onPress={() => { }}
-            disabled={true}
+            onPress={() => router.push('/(tabs)/buyers-management')}
+            disabled={false}
           />
           <MenuItem
             icon={Megaphone}
