@@ -302,10 +302,9 @@ export default function MoreMenuScreen() {
           <MenuItem
             icon={FolderOpen}
             title="MSME Documentation"
-            subtitle="Manage your Udyam and PSM claims"
-            iconBg="#fdf4ff" iconColor="#d946ef"
-            onPress={() => { }}
-            disabled={true}
+            subtitle="View & update your Udyam details"
+            iconBg="#e0e7ff" iconColor="#4f46e5"
+            onPress={() => router.push('/(tabs)/msme-documentation')}
           />
         </View>
 

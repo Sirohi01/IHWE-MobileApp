@@ -161,6 +161,13 @@ export default function TabLayout() {
           title: 'Make Payment'
         }} 
       />
+      <Tabs.Screen 
+        name="msme-documentation" 
+        options={{
+          href: null,
+          title: 'MSME Documentation'
+        }} 
+      />
     </Tabs>
       <TourOverlay />
     </>
