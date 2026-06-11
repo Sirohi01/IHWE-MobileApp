@@ -261,8 +261,7 @@ export default function MoreMenuScreen() {
             icon={ShoppingBag}
             title="Add On Services"
             iconBg="#fef2f2" iconColor="#ef4444"
-            onPress={() => { }}
-            disabled={true}
+            onPress={() => router.push('/(tabs)/add-on-services')}
           />
           <MenuItem
             icon={Package}

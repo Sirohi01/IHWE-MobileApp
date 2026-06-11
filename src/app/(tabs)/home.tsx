@@ -229,7 +229,7 @@ export default function HomeTab() {
             iconColor="#22c55e"
             onPress={() => router.push('/(tabs)/invoices')}
           />
-          <QuickAccessCard onPress={() => {}} disabled={true} icon={PlusCircle} title="Add On Services" sub="View & purchase" iconBg="#fef2f2" iconColor="#ef4444" />
+          <QuickAccessCard onPress={() => router.push('/(tabs)/add-on-services')} icon={PlusCircle} title="Add On Services" sub="View & purchase" iconBg="#fef2f2" iconColor="#ef4444" />
           <QuickAccessCard onPress={() => {}} disabled={true} icon={Ticket} title="Passes & Hospitality" sub="View & download pass" iconBg="#f0fdf4" iconColor="#22c55e" />
           <QuickAccessCard onPress={() => {}} disabled={true} icon={Box} title="My Product/Services" sub="Add your products" iconBg="#f5f3ff" iconColor="#8b5cf6" />
           <QuickAccessCard onPress={() => {}} disabled={true} icon={FolderOpen} title="MSME Documentation" sub="Upload & manage" iconBg="#f5f3ff" iconColor="#8b5cf6" />

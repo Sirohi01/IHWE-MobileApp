@@ -41,3 +41,13 @@ example
 # generated native folders
 /ios
 /android
+
+# IDE and AI Agents
+.vscode/
+.vscode
+CLAUDE.md
+AGENTS.md
+claude.md
+agent.md
+.claude/
+*.cursorrules
