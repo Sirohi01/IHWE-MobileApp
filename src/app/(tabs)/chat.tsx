@@ -4,7 +4,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, ActivityInd
 import { Send, Smile, Paperclip, Check, CheckCheck, MoreVertical, Phone, BadgeCheck, Loader2, Info, UserCircle2 } from 'lucide-react-native';
 import type { Socket } from 'socket.io-client';
 // @ts-ignore
-import { io } from 'socket.io-client/build/cjs/index.js';
+import { io } from 'socket.io-client';
 import * as SecureStore from 'expo-secure-store';
 import { apiClient, API_URL } from '@/core/api/axios';
 import { router } from 'expo-router';

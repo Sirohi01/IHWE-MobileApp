@@ -4,7 +4,6 @@ import { Mail, MessageCircle, ArrowRight, ShieldCheck } from 'lucide-react-nativ
 import { useRouter } from 'expo-router';
 import { apiClient } from '../../core/api/axios';
 import { useAuthStore } from '../../core/store/useAuthStore';
-
 export default function LoginScreen() {
   const router = useRouter();
   const setToken = useAuthStore((state) => state.setToken);
@@ -107,7 +106,7 @@ export default function LoginScreen() {
           <View className="items-center mb-4 w-full px-2">
             <Image
               source={require('../../../assets/images/logo.png')}
-              style={{ width: 300, height: 150, marginBottom: 8 }}
+              style={{ width: 350, height: 120, aspectRatio: 2.2, marginBottom: 8 }}
               resizeMode="contain"
             />
             <Text className="text-2xl font-bold text-[#1F2937] tracking-tight">Exhibitor Portal</Text>
