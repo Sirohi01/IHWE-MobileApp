@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "mobile-app",
-    "slug": "mobile-app",
+    "name": "IHWE-Portal",
+    "slug": "ihwe-portal",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mobileapp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/icon.png"
     },
     "android": {
       "adaptiveIcon": {
@@ -34,7 +34,10 @@
             "imageWidth": 76
           }
         }
-      ]
+      ],
+      "expo-font",
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
