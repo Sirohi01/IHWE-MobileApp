@@ -112,6 +112,41 @@ export default function TabLayout() {
           title: 'Add On Services'
         }} 
       />
+      <Tabs.Screen 
+        name="passes-and-hospitality" 
+        options={{
+          href: null,
+          title: 'Passes & Hospitality'
+        }} 
+      />
+      <Tabs.Screen 
+        name="profile-details" 
+        options={{
+          href: null,
+          title: 'Profile Details'
+        }} 
+      />
+      <Tabs.Screen 
+        name="my-products" 
+        options={{
+          href: null,
+          title: 'My Products'
+        }} 
+      />
+      <Tabs.Screen 
+        name="e-promotion" 
+        options={{
+          href: null,
+          title: 'E-Promotion'
+        }} 
+      />
+      <Tabs.Screen 
+        name="policy/[id]" 
+        options={{
+          href: null,
+          title: 'Policy'
+        }} 
+      />
     </Tabs>
       <TourOverlay />
     </>

@@ -1,45 +1,71 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Image, Animated, Text } from 'react-native';
+import { View, Image, Animated, Text, Dimensions, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../core/store/useAuthStore';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width, height } = Dimensions.get('window');
 
 export default function Index() {
   const router = useRouter();
   const { checkAuth } = useAuthStore();
+  
+  // Advanced Animations
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.85)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateYAnim = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
 
     const initializeApp = async () => {
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }).start();
+      // 1. Entrance Animation
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 6,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateYAnim, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        })
+      ]).start();
+
+      // 2. Continuous Breathing/Pulse Effect for the Logo Glow
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
-            toValue: 1.04,
-            duration: 1500,
+            toValue: 1.15,
+            duration: 2000,
             useNativeDriver: true,
           }),
           Animated.timing(pulseAnim, {
             toValue: 1,
-            duration: 1500,
+            duration: 2000,
             useNativeDriver: true,
           })
         ])
       ).start();
+
+      // 3. Progress Bar Fill
       Animated.timing(progressAnim, {
         toValue: 100,
-        duration: 3000,
+        duration: 3500, // slightly longer for a cinematic feel
         useNativeDriver: false,
       }).start();
 
       await checkAuth();
+      
       timer = setTimeout(() => {
         const isLoggedIn = useAuthStore.getState().isAuthenticated;
         if (isLoggedIn) {
@@ -47,7 +73,7 @@ export default function Index() {
         } else {
           router.replace('/(auth)/login');
         }
-      }, 3000);
+      }, 3500);
     };
 
     initializeApp();
@@ -58,50 +84,178 @@ export default function Index() {
   }, []);
 
   return (
-    <View className="flex-1 bg-[#F9FAFB] justify-center items-center relative overflow-hidden">
-      <View className="absolute top-[-100] left-[-50] w-96 h-96 bg-[#E8F5E9] rounded-full opacity-30 blur-3xl" />
-      <View className="absolute bottom-[-150] right-[-100] w-[500px] h-[500px] bg-[#E8F5E9] rounded-full opacity-30 blur-3xl" />
+    <View style={styles.container}>
+      {/* Dynamic Background */}
+      <LinearGradient
+        colors={['#ffffff', '#f4fbf7', '#e8f5e9']}
+        style={StyleSheet.absoluteFillObject}
+      />
+
+      {/* Decorative Orbs */}
+      <Animated.View style={[styles.orb, styles.orbTop, { opacity: fadeAnim }]} />
+      <Animated.View style={[styles.orb, styles.orbBottom, { opacity: fadeAnim }]} />
 
       <Animated.View
-        className="flex-1 w-full justify-center items-center px-8"
-        style={{ opacity: fadeAnim }}
+        style={[
+          styles.content,
+          { 
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }, { translateY: translateYAnim }]
+          }
+        ]}
       >
-        <Animated.View style={{ transform: [{ scale: pulseAnim }], width: '100%', alignItems: 'center' }}>
+        {/* Logo Container with Glowing Pulse */}
+        <View style={styles.logoContainer}>
+          <Animated.View 
+            style={[
+              styles.logoGlow, 
+              { transform: [{ scale: pulseAnim }] }
+            ]} 
+          />
           <Image
             source={require('../../assets/images/logo.png')}
-            style={{ width: '90%', height: 220 }}
+            style={styles.logo}
             resizeMode="contain"
           />
-        </Animated.View>
-
-        {/* Premium Tagline */}
-        <View className="mt-12 flex-row items-center justify-center space-x-3">
-          <Text className="text-[#374151] font-medium tracking-widest text-xs uppercase">Connecting</Text>
-          <View className="w-1 h-1 rounded-full bg-[#E67E22]" />
-          <Text className="text-[#374151] font-medium tracking-widest text-xs uppercase">Collaborating</Text>
-          <View className="w-1 h-1 rounded-full bg-[#E67E22]" />
-          <Text className="text-[#374151] font-medium tracking-widest text-xs uppercase">Growing</Text>
         </View>
 
-        {/* Ultra-sleek minimalist progress indicator */}
-        <View className="absolute bottom-16 w-full items-center">
-          <View className="w-3/5 h-[3px] bg-gray-200 rounded-full overflow-hidden shadow-sm">
+        {/* Cinematic Title & Tagline */}
+        <View style={styles.textContainer}>
+          <Text style={styles.title}>Welcome to IHWE 2026</Text>
+          <View style={styles.taglineContainer}>
+            <Text style={styles.taglineText}>HEALTH</Text>
+            <View style={styles.dot} />
+            <Text style={styles.taglineText}>WELLNESS</Text>
+            <View style={styles.dot} />
+            <Text style={styles.taglineText}>FUTURE</Text>
+          </View>
+        </View>
+
+        {/* Premium Loading Indicator */}
+        <View style={styles.loaderContainer}>
+          <View style={styles.progressBarTrack}>
             <Animated.View
-              className="h-full bg-[#2E5D36] rounded-full"
-              style={{
-                width: progressAnim.interpolate({
-                  inputRange: [0, 100],
-                  outputRange: ['0%', '100%'],
-                }),
-              }}
+              style={[
+                styles.progressBarFill,
+                {
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ['0%', '100%'],
+                  }),
+                }
+              ]}
             />
           </View>
-          <Text className="text-[#6B7280] text-[10px] uppercase tracking-[0.2em] mt-4 font-semibold">
-            Preparing Experience
-          </Text>
+          <Text style={styles.loadingText}>Initializing Experience...</Text>
         </View>
-      </Animated.View>
 
+      </Animated.View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  orb: {
+    position: 'absolute',
+    width: width * 1.5,
+    height: width * 1.5,
+    borderRadius: width,
+    backgroundColor: 'rgba(16, 185, 129, 0.03)', // very faint emerald
+  },
+  orbTop: {
+    top: -width * 0.8,
+    right: -width * 0.4,
+  },
+  orbBottom: {
+    bottom: -width * 0.8,
+    left: -width * 0.4,
+  },
+  content: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoContainer: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 40,
+    position: 'relative',
+  },
+  logoGlow: {
+    position: 'absolute',
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: 'rgba(16, 185, 129, 0.08)', // subtle emerald glow
+    zIndex: 0,
+  },
+  logo: {
+    width: '85%',
+    height: 220,
+    zIndex: 1,
+  },
+  textContainer: {
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#064e3b', // emerald-900
+    letterSpacing: -0.5,
+    marginBottom: 16,
+  },
+  taglineContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  taglineText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#059669', // emerald-600
+    letterSpacing: 3,
+  },
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#f59e0b', // amber-500
+  },
+  loaderContainer: {
+    position: 'absolute',
+    bottom: height * 0.1,
+    width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: 60,
+  },
+  progressBarTrack: {
+    width: '100%',
+    height: 4,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#10b981', // emerald-500
+    borderRadius: 2,
+  },
+  loadingText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#64748b', // slate-500
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+});

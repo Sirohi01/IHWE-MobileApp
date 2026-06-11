@@ -29,7 +29,8 @@ import {
   Home,
   QrCode,
   Menu as MenuIcon,
-  PlayCircle
+  PlayCircle,
+  RefreshCcw
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
@@ -263,20 +264,21 @@ export default function MoreMenuScreen() {
             iconBg="#fef2f2" iconColor="#ef4444"
             onPress={() => router.push('/(tabs)/add-on-services')}
           />
+
           <MenuItem
             icon={Package}
             title="My Product/Services"
             iconBg="#f5f3ff" iconColor="#8b5cf6"
-            onPress={() => { }}
-            disabled={true}
+            onPress={() => router.push('/(tabs)/my-products')}
+            disabled={false}
           />
           <MenuItem
             icon={Briefcase}
-            title="Passes & Staff"
+            title="Passes & Hospitality"
             subtitle="Manage your exhibitor passes & badges"
             iconBg="#f0fdf4" iconColor="#22c55e"
-            onPress={() => { }}
-            disabled={true}
+            onPress={() => router.push('/(tabs)/passes-and-hospitality')}
+            disabled={false}
           />
         </View>
 
@@ -323,8 +325,8 @@ export default function MoreMenuScreen() {
             title="E-Promotion"
             subtitle="Promote your presence at the event"
             iconBg="#dbeafe" iconColor="#2563eb"
-            onPress={() => { }}
-            disabled={true}
+            onPress={() => router.push('/(tabs)/e-promotion')}
+            disabled={false}
           />
         </View>
 
@@ -335,16 +337,10 @@ export default function MoreMenuScreen() {
             icon={UserCircle2}
             title="Profile details"
             iconBg="#f8fafc" iconColor="#475569"
-            onPress={() => { }}
-            disabled={true}
+            onPress={() => router.push('/(tabs)/profile-details')}
+            disabled={false}
           />
-          <MenuItem
-            icon={ShieldCheck}
-            title="Security & Password"
-            iconBg="#f8fafc" iconColor="#475569"
-            onPress={() => { }}
-            disabled={true}
-          />
+
           <MenuItem
             icon={Store}
             title="Become a Seller"
@@ -374,10 +370,21 @@ export default function MoreMenuScreen() {
           />
           <MenuItem
             icon={FileText}
-            title="Terms & Conditions"
+            title="Terms of Service"
             iconBg="#f8fafc" iconColor="#64748b"
-            onPress={() => { }}
-            disabled={true}
+            onPress={() => router.push('/(tabs)/policy/terms-of-service' as any)}
+          />
+          <MenuItem
+            icon={ShieldCheck}
+            title="Privacy Policy"
+            iconBg="#f8fafc" iconColor="#64748b"
+            onPress={() => router.push('/(tabs)/policy/privacy-policy' as any)}
+          />
+          <MenuItem
+            icon={RefreshCcw}
+            title="Refund Policy"
+            iconBg="#f8fafc" iconColor="#64748b"
+            onPress={() => router.push('/(tabs)/policy/refund-policy' as any)}
           />
         </View>
 

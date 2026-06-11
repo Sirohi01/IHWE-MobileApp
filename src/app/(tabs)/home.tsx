@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image, ImageBackground } from 'react-native';
-import { Bell, LogOut, Store, CheckCircle, FileText, Megaphone, CalendarDays, Building2, Layers, ChevronRight, CheckSquare, Settings, Users, Sparkles, Box, Calendar, PlusCircle, Ticket, FolderOpen, MapPin, Clock } from 'lucide-react-native';
+import { Bell, LogOut, Store, CheckCircle, FileText, Megaphone, CalendarDays, Building2, Layers, ChevronRight, CheckSquare, Settings, Users, Sparkles, Box, Calendar, PlusCircle, Ticket, FolderOpen, MapPin, Clock, CreditCard, HeadphonesIcon, UserCheck } from 'lucide-react-native';
 import { apiClient } from '@/core/api/axios';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
@@ -230,10 +230,14 @@ export default function HomeTab() {
             onPress={() => router.push('/(tabs)/invoices')}
           />
           <QuickAccessCard onPress={() => router.push('/(tabs)/add-on-services')} icon={PlusCircle} title="Add On Services" sub="View & purchase" iconBg="#fef2f2" iconColor="#ef4444" />
-          <QuickAccessCard onPress={() => {}} disabled={true} icon={Ticket} title="Passes & Hospitality" sub="View & download pass" iconBg="#f0fdf4" iconColor="#22c55e" />
-          <QuickAccessCard onPress={() => {}} disabled={true} icon={Box} title="My Product/Services" sub="Add your products" iconBg="#f5f3ff" iconColor="#8b5cf6" />
+          <QuickAccessCard onPress={() => router.push('/(tabs)/passes-and-hospitality')} disabled={false} icon={Ticket} title="Passes & Hospitality" sub="View & download pass" iconBg="#f0fdf4" iconColor="#22c55e" />
+          <QuickAccessCard onPress={() => router.push('/(tabs)/my-products')} disabled={false} icon={Box} title="My Product/Services" sub="Add your products" iconBg="#f5f3ff" iconColor="#8b5cf6" />
           <QuickAccessCard onPress={() => {}} disabled={true} icon={FolderOpen} title="MSME Documentation" sub="Upload & manage" iconBg="#f5f3ff" iconColor="#8b5cf6" />
           <QuickAccessCard onPress={() => {}} disabled={true} icon={Users} title="Buyers Management" sub="View buyer contacts" iconBg="#f0fdfa" iconColor="#14b8a6" />
+          <QuickAccessCard onPress={() => {}} disabled={true} icon={CreditCard} title="Make Payment" sub="Pay pending dues" iconBg="#fff7ed" iconColor="#f97316" />
+          <QuickAccessCard onPress={() => router.push('/(tabs)/e-promotion')} disabled={false} icon={Megaphone} title="E-Promotion" sub="Boost visibility" iconBg="#dbeafe" iconColor="#2563eb" />
+          <QuickAccessCard onPress={() => router.push('/(tabs)/chat')} disabled={false} icon={HeadphonesIcon} title="Customer Care" sub="Get support" iconBg="#fce7f3" iconColor="#db2777" />
+          <QuickAccessCard onPress={() => router.push('/(tabs)/relationship-manager')} disabled={false} icon={UserCheck} title="Relationship Manager" sub="Contact RM" iconBg="#e0e7ff" iconColor="#4f46e5" />
         </View>
 
         {/* Payment Overview & Important Updates Grid */}
