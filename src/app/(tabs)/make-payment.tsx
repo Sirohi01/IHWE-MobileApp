@@ -67,7 +67,7 @@ export default function MakePaymentScreen() {
     }
 
     const cur = data?.participation?.currency === 'USD' ? '$' : '₹';
-    const total = data?.participation?.total || 0;
+    const total = data?.financeBreakdown?.netPayable || data?.totalPayable || data?.participation?.total || 0;
     const paid = data?.amountPaid || 0;
     const balance = data?.balanceAmount || 0;
     const isOverdue = data?.status?.toLowerCase() === 'overdue';

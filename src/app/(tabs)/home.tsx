@@ -84,7 +84,7 @@ export default function HomeTab() {
   if (!data) return null;
 
   const cur = data.participation?.currency === 'USD' ? '$' : '₹';
-  const total = data.participation?.total || 0;
+  const total = data.financeBreakdown?.netPayable || data.totalPayable || data.participation?.total || 0;
   const paid = data.amountPaid || 0;
   const balance = data.balanceAmount || 0;
   const paidPct = total > 0 ? Math.round((paid / total) * 100) : 0;
@@ -262,7 +262,9 @@ export default function HomeTab() {
             <View className="flex-row items-center">
               {/* Fake Pie Chart */}
               <View className="w-24 h-24 rounded-full border-[10px] border-[#16a34a] items-center justify-center mr-6 relative">
-                <View className="absolute top-[-10px] right-[-10px] w-[60%] h-[60%] border-[10px] border-[#facc15] rounded-tr-full border-b-0 border-l-0 opacity-80" />
+                {balance > 0 && (
+                  <View className="absolute top-[-10px] right-[-10px] w-[60%] h-[60%] border-[10px] border-[#facc15] rounded-tr-full border-b-0 border-l-0 opacity-80" />
+                )}
               </View>
 
               <View className="flex-1">
