@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image, TextInput, Alert, Modal } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image, TextInput, Alert, Modal, FlatList } from 'react-native';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { apiClient } from '@/core/api/axios';
@@ -39,6 +39,11 @@ export default function AddOnServicesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('All Items');
   const [exhibitorData, setExhibitorData] = useState<any>(null);
+  const [visibleCount, setVisibleCount] = useState(12);
+
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [activeTab, searchQuery]);
 
   // Razorpay state
   const [showRazorpay, setShowRazorpay] = useState(false);
@@ -229,6 +234,69 @@ export default function AddOnServicesScreen() {
     );
   }
 
+  const loadMore = () => {
+    if (visibleCount < filteredItems.length) {
+      setVisibleCount(prev => prev + 12);
+    }
+  };
+
+  const renderItem = ({ item }: { item: any }) => {
+    const inCart = cart.find(c => c.accessoryId === item._id);
+    const finalImageUrl = item.imageUrl ? (item.imageUrl.startsWith('http') ? item.imageUrl : `${SERVER_URL}${item.imageUrl}`) : null;
+    return (
+      <View className="bg-white w-[48%] rounded-xl mb-3 shadow-sm border border-slate-200 overflow-hidden">
+        <View className="h-28 bg-slate-50 relative border-b border-slate-100 items-center justify-center p-2">
+          {finalImageUrl ? (
+            <Image source={{ uri: finalImageUrl }} className="w-full h-full" resizeMode="contain" />
+          ) : (
+            // @ts-ignore
+            <ImageIcon size={30} color="#cbd5e1" />
+          )}
+          {item.label && (
+            <View className="absolute top-2 left-2 bg-[#16a34a] px-1.5 py-0.5 rounded shadow-sm">
+              <Text className="text-white text-[8px] font-black uppercase tracking-widest">{item.label}</Text>
+            </View>
+          )}
+        </View>
+        <View className="p-2.5">
+          <Text className="text-slate-800 font-bold text-[11px] mb-1" numberOfLines={2}>{item.name}</Text>
+          <View className="flex-row items-baseline mb-2">
+            <Text className="text-[#1a3a7c] font-black text-[13px] mr-1">{fmt(item.price)}</Text>
+            <Text className="text-slate-400 font-bold text-[8px]">/{item.unit || 'Unit'}</Text>
+          </View>
+          
+          {inCart ? (
+            <View className="flex-row items-center justify-between bg-blue-50 border border-blue-200 rounded-lg h-8 px-1">
+              <TouchableOpacity onPress={() => updateQty(item._id, -1)} className="w-8 h-full items-center justify-center">
+                {/* @ts-ignore */}
+                <Minus size={14} color="#1a3a7c" />
+              </TouchableOpacity>
+              <Text className="font-black text-[#1a3a7c] text-[12px]">{inCart.qty}</Text>
+              <TouchableOpacity onPress={() => updateQty(item._id, 1)} className="w-8 h-full items-center justify-center">
+                {/* @ts-ignore */}
+                <Plus size={14} color="#1a3a7c" />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity 
+              onPress={() => addToCart(item)}
+              disabled={(item.availableQty || 0) <= 0}
+              className={`flex-row items-center justify-center h-8 rounded-lg border ${
+                (item.availableQty || 0) <= 0 ? 'bg-slate-100 border-slate-200' : 'bg-white border-[#1a3a7c]'
+              }`}
+            >
+              {/* @ts-ignore */}
+              <ShoppingCart size={12} color={(item.availableQty || 0) <= 0 ? "#94a3b8" : "#1a3a7c"} className="mr-1" />
+              <Text className={`text-[10px] font-bold ${(item.availableQty || 0) <= 0 ? 'text-slate-400' : 'text-[#1a3a7c]'}`}>
+                {(item.availableQty || 0) <= 0 ? 'Out of Stock' : 'Add to Cart'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
+
   return (
     <View className="flex-1 bg-[#f4f7f9]">
       {/* Header */}
@@ -288,76 +356,30 @@ export default function AddOnServicesScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView className="flex-1 px-4 pt-3" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-        <Text className="text-[#1a3a7c] font-black text-[13px] mb-2 ml-1 uppercase tracking-wider">{activeTab} ({filteredItems.length})</Text>
-        
-        <View className="flex-row flex-wrap justify-between">
-          {filteredItems.map(item => {
-            const inCart = cart.find(c => c.accessoryId === item._id);
-            const finalImageUrl = item.imageUrl ? (item.imageUrl.startsWith('http') ? item.imageUrl : `${SERVER_URL}${item.imageUrl}`) : null;
-            return (
-              <View key={item._id} className="bg-white w-[48%] rounded-xl mb-3 shadow-sm border border-slate-200 overflow-hidden">
-                <View className="h-28 bg-slate-50 relative border-b border-slate-100 items-center justify-center p-2">
-                  {finalImageUrl ? (
-                    <Image source={{ uri: finalImageUrl }} className="w-full h-full" resizeMode="contain" />
-                  ) : (
-                    // @ts-ignore
-                    <ImageIcon size={30} color="#cbd5e1" />
-                  )}
-                  {item.label && (
-                    <View className="absolute top-2 left-2 bg-[#16a34a] px-1.5 py-0.5 rounded shadow-sm">
-                      <Text className="text-white text-[8px] font-black uppercase tracking-widest">{item.label}</Text>
-                    </View>
-                  )}
-                </View>
-                <View className="p-2.5">
-                  <Text className="text-slate-800 font-bold text-[11px] mb-1" numberOfLines={2}>{item.name}</Text>
-                  <View className="flex-row items-baseline mb-2">
-                    <Text className="text-[#1a3a7c] font-black text-[13px] mr-1">{fmt(item.price)}</Text>
-                    <Text className="text-slate-400 font-bold text-[8px]">/{item.unit || 'Unit'}</Text>
-                  </View>
-                  
-                  {inCart ? (
-                    <View className="flex-row items-center justify-between bg-blue-50 border border-blue-200 rounded-lg h-8 px-1">
-                      <TouchableOpacity onPress={() => updateQty(item._id, -1)} className="w-8 h-full items-center justify-center">
-                        {/* @ts-ignore */}
-                        <Minus size={14} color="#1a3a7c" />
-                      </TouchableOpacity>
-                      <Text className="font-black text-[#1a3a7c] text-[12px]">{inCart.qty}</Text>
-                      <TouchableOpacity onPress={() => updateQty(item._id, 1)} className="w-8 h-full items-center justify-center">
-                        {/* @ts-ignore */}
-                        <Plus size={14} color="#1a3a7c" />
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <TouchableOpacity 
-                      onPress={() => addToCart(item)}
-                      disabled={(item.availableQty || 0) <= 0}
-                      className={`flex-row items-center justify-center h-8 rounded-lg border ${
-                        (item.availableQty || 0) <= 0 ? 'bg-slate-100 border-slate-200' : 'bg-white border-[#1a3a7c]'
-                      }`}
-                    >
-                      {/* @ts-ignore */}
-                      <ShoppingCart size={12} color={(item.availableQty || 0) <= 0 ? "#94a3b8" : "#1a3a7c"} className="mr-1" />
-                      <Text className={`text-[10px] font-bold ${(item.availableQty || 0) <= 0 ? 'text-slate-400' : 'text-[#1a3a7c]'}`}>
-                        {(item.availableQty || 0) <= 0 ? 'Out of Stock' : 'Add to Cart'}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            );
-          })}
-        </View>
-
-        {filteredItems.length === 0 && !loading && (
-          <View className="items-center justify-center py-10 opacity-50">
-             {/* @ts-ignore */}
-             <Store size={40} color="#64748b" className="mb-2" />
-             <Text className="text-slate-500 font-bold">No items found</Text>
-          </View>
-        )}
-      </ScrollView>
+      <FlatList
+        className="flex-1 px-4 pt-3"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        data={filteredItems.slice(0, visibleCount)}
+        keyExtractor={item => item._id}
+        renderItem={renderItem}
+        numColumns={2}
+        columnWrapperStyle={{ justifyContent: 'space-between' }}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.3}
+        ListHeaderComponent={
+          <Text className="text-[#1a3a7c] font-black text-[13px] mb-2 ml-1 uppercase tracking-wider">{activeTab} ({filteredItems.length})</Text>
+        }
+        ListEmptyComponent={
+          filteredItems.length === 0 && !loading ? (
+            <View className="items-center justify-center py-10 opacity-50">
+               {/* @ts-ignore */}
+               <Store size={40} color="#64748b" className="mb-2" />
+               <Text className="text-slate-500 font-bold">No items found</Text>
+            </View>
+          ) : null
+        }
+      />
 
       {/* Floating Action Bar */}
       {totalCartQty > 0 && !showCart && (

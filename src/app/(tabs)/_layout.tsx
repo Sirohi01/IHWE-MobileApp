@@ -105,6 +105,13 @@ export default function TabLayout() {
           title: 'Invoices & Receipts'
         }} 
       />
+      <Tabs.Screen 
+        name="add-on-services" 
+        options={{
+          href: null,
+          title: 'Add On Services'
+        }} 
+      />
     </Tabs>
       <TourOverlay />
     </>
