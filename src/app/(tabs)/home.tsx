@@ -234,7 +234,7 @@ export default function HomeTab() {
           <QuickAccessCard onPress={() => router.push('/(tabs)/my-products')} disabled={false} icon={Box} title="My Product/Services" sub="Add your products" iconBg="#f5f3ff" iconColor="#8b5cf6" />
           <QuickAccessCard onPress={() => {}} disabled={true} icon={FolderOpen} title="MSME Documentation" sub="Upload & manage" iconBg="#f5f3ff" iconColor="#8b5cf6" />
           <QuickAccessCard onPress={() => router.push('/(tabs)/buyers-management')} disabled={false} icon={Users} title="Buyers Management" sub="View buyer contacts" iconBg="#f0fdfa" iconColor="#14b8a6" />
-          <QuickAccessCard onPress={() => {}} disabled={true} icon={CreditCard} title="Make Payment" sub="Pay pending dues" iconBg="#fff7ed" iconColor="#f97316" />
+          <QuickAccessCard onPress={() => router.push('/(tabs)/make-payment')} disabled={false} icon={CreditCard} title="Make Payment" sub="Pay pending dues" iconBg="#fff7ed" iconColor="#f97316" />
           <QuickAccessCard onPress={() => router.push('/(tabs)/e-promotion')} disabled={false} icon={Megaphone} title="E-Promotion" sub="Boost visibility" iconBg="#dbeafe" iconColor="#2563eb" />
           <QuickAccessCard onPress={() => router.push('/(tabs)/chat')} disabled={false} icon={HeadphonesIcon} title="Customer Care" sub="Get support" iconBg="#fce7f3" iconColor="#db2777" />
           <QuickAccessCard onPress={() => router.push('/(tabs)/relationship-manager')} disabled={false} icon={UserCheck} title="Relationship Manager" sub="Contact RM" iconBg="#e0e7ff" iconColor="#4f46e5" />

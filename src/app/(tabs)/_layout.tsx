@@ -154,6 +154,13 @@ export default function TabLayout() {
           title: 'Buyers Management'
         }} 
       />
+      <Tabs.Screen 
+        name="make-payment" 
+        options={{
+          href: null,
+          title: 'Make Payment'
+        }} 
+      />
     </Tabs>
       <TourOverlay />
     </>

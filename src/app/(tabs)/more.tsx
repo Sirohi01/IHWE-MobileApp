@@ -289,8 +289,8 @@ export default function MoreMenuScreen() {
             icon={CreditCard}
             title="Make Payment"
             iconBg="#fff7ed" iconColor="#f97316"
-            onPress={() => { }}
-            disabled={true}
+            onPress={() => router.push('/(tabs)/make-payment')}
+            disabled={false}
           />
           <MenuItem
             icon={FileText}
