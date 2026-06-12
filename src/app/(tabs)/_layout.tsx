@@ -175,6 +175,13 @@ export default function TabLayout() {
           title: 'Become a Seller'
         }} 
       />
+      <Tabs.Screen 
+        name="feedback" 
+        options={{
+          href: null,
+          title: 'Feedback'
+        }} 
+      />
     </Tabs>
       <TourOverlay />
     </>

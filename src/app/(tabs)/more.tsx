@@ -364,8 +364,8 @@ export default function MoreMenuScreen() {
             icon={MessageSquare}
             title="Feedback"
             iconBg="#fef2f2" iconColor="#dc2626"
-            onPress={() => { }}
-            disabled={true}
+            onPress={() => router.push('/(tabs)/feedback')}
+            disabled={false}
           />
           <MenuItem
             icon={FileText}
