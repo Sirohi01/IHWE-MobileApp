@@ -405,14 +405,14 @@ export default function ChatScreen() {
                     </View>
                     {group.items.map((item, idx) => (
                       <View key={item.id || idx} className="bg-white px-4 py-3 border-b border-slate-100 flex-row items-start">
-                        <View 
+                        <View
                           className="w-10 h-10 rounded-full items-center justify-center mr-3 mt-1"
                           style={{ backgroundColor: item.type === 'Chat' ? '#dcfce7' : item.type === 'Email' ? '#ede9fe' : '#ffedd5' }}
                         >
                           {item.type === 'Chat' ? <MessageSquare size={16} color="#108c2d" /> :
-                           item.type === 'Email' ? <Mail size={16} color="#7c3aed" /> :
-                           item.callType === 'incoming' ? <PhoneIncoming size={16} color="#ea580c" /> :
-                           <PhoneOutgoing size={16} color="#ea580c" />}
+                            item.type === 'Email' ? <Mail size={16} color="#7c3aed" /> :
+                              item.callType === 'incoming' ? <PhoneIncoming size={16} color="#ea580c" /> :
+                                <PhoneOutgoing size={16} color="#ea580c" />}
                         </View>
                         <View className="flex-1">
                           <View className="flex-row justify-between items-center mb-1">
