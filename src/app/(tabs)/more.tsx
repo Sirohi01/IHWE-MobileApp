@@ -345,8 +345,8 @@ export default function MoreMenuScreen() {
             title="Become a Seller"
             subtitle="Access the Seller Portal"
             iconBg="#ecfdf5" iconColor="#059669"
-            onPress={() => { }}
-            disabled={true}
+            onPress={() => router.push('/(tabs)/become-seller')}
+            disabled={false}
           />
         </View>
 

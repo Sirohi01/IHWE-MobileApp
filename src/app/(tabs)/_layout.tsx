@@ -168,6 +168,13 @@ export default function TabLayout() {
           title: 'MSME Documentation'
         }} 
       />
+      <Tabs.Screen 
+        name="become-seller" 
+        options={{
+          href: null,
+          title: 'Become a Seller'
+        }} 
+      />
     </Tabs>
       <TourOverlay />
     </>
