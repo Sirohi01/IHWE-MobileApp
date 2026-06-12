@@ -1,7 +1,7 @@
 import '../../global.css';
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
-import { Send, Smile, Paperclip, Check, CheckCheck, MoreVertical, Phone, BadgeCheck, Loader2, Info, UserCircle2 } from 'lucide-react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import { Send, Smile, Paperclip, Check, CheckCheck, MoreVertical, Phone, BadgeCheck, Loader2, Info, UserCircle2, History, Mail, PhoneIncoming, PhoneOutgoing, X, Filter, MessageSquare } from 'lucide-react-native';
 import type { Socket } from 'socket.io-client';
 // @ts-ignore
 import { io } from 'socket.io-client';
@@ -25,6 +25,9 @@ export default function ChatScreen() {
 
   const scrollViewRef = useRef<ScrollView>(null);
   const typingTimer = useRef<any>(null);
+
+  const [historyModalVisible, setHistoryModalVisible] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState('All');
 
   useEffect(() => {
     fetchData();
@@ -175,6 +178,46 @@ export default function ChatScreen() {
     }
   ];
 
+  const friendlyDate = (d: string | Date) => {
+    const date = new Date(d);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    const dd = pad(date.getDate());
+    const mmm = date.toLocaleString("en-IN", { month: "short" });
+    const yyyy = date.getFullYear();
+    if (date.toDateString() === today.toDateString()) return `Today, ${dd} ${mmm} ${yyyy}`;
+    if (date.toDateString() === yesterday.toDateString()) return `Yesterday, ${dd} ${mmm} ${yyyy}`;
+    return `${dd} ${mmm} ${yyyy}`;
+  };
+
+  const chatHistory = displayMessages.map((msg) => ({
+    id: msg._id,
+    type: "Chat",
+    time: timeStr(msg.createdAt),
+    title: "Chat",
+    desc: msg.senderType === "exhibitor" ? `You: ${msg.message}` : `${rmDisplayName}: ${msg.message}`,
+    date: friendlyDate(msg.createdAt),
+  }));
+
+  const hardcodedHistory = [
+    { id: "h-email-1", type: "Email", time: "04:21 PM", title: "Email", desc: "Support Team: Re: Stall setup guidelines (Attachment)", date: "19 May 2026" },
+    { id: "h-email-2", type: "Email", time: "04:18 PM", title: "Email", desc: "You: Requested information about stall setup guidelines.", date: "19 May 2026" },
+    { id: "h-call-1", type: "Call", time: "03:15 PM", title: "Call", desc: "Outgoing Call • Duration: 04:32 min", date: "18 May 2026", callType: "outgoing" },
+    { id: "h-call-2", type: "Call", time: "03:10 PM", title: "Call", desc: "Incoming Call • Duration: 06:15 min", date: "18 May 2026", callType: "incoming" },
+  ];
+
+  const combinedHistory = [...chatHistory, ...hardcodedHistory];
+  const filteredHistory = historyFilter === "All" ? combinedHistory : combinedHistory.filter((h) => h.type === historyFilter);
+
+  const historyGroups: { date: string; items: any[] }[] = [];
+  filteredHistory.forEach((item) => {
+    const last = historyGroups[historyGroups.length - 1];
+    if (!last || last.date !== item.date) historyGroups.push({ date: item.date, items: [item] });
+    else last.items.push(item);
+  });
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -191,20 +234,29 @@ export default function ChatScreen() {
           <View className="ml-3 flex-1">
             <View className="flex-row items-center">
               <Text className="text-[#0f172a] font-black text-[16px] tracking-tight">{rmDisplayName}</Text>
-              {rmDetails && <BadgeCheck size={14} color="#3b82f6" className="ml-1" />}
+              {rmDetails && <BadgeCheck size={14} color="#3b82f6" style={{ marginLeft: 4 }} />}
             </View>
             <Text className="text-slate-500 font-medium text-[11px] mt-0.5">{rmDesignation}</Text>
             {adminTyping && <Text className="text-[#108c2d] font-bold text-[10px] mt-0.5 italic">typing...</Text>}
           </View>
         </View>
 
-        <TouchableOpacity
-          onPress={() => router.push('/(tabs)/relationship-manager')}
-          className="w-10 h-10 bg-[#eff6ff] rounded-full items-center justify-center ml-2 border border-blue-100"
-        >
-          {/* @ts-ignore */}
-          <UserCircle2 size={22} color="#2563eb" strokeWidth={1.5} />
-        </TouchableOpacity>
+        <View className="flex-row items-center">
+          <TouchableOpacity
+            onPress={() => setHistoryModalVisible(true)}
+            className="w-10 h-10 bg-[#f8fafc] rounded-full items-center justify-center ml-2 border border-slate-200"
+          >
+            {/* @ts-ignore */}
+            <History size={20} color="#64748b" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/relationship-manager')}
+            className="w-10 h-10 bg-[#eff6ff] rounded-full items-center justify-center ml-2 border border-blue-100"
+          >
+            {/* @ts-ignore */}
+            <UserCircle2 size={22} color="#2563eb" strokeWidth={1.5} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Chat Area */}
@@ -292,9 +344,92 @@ export default function ChatScreen() {
             }`}
         >
           {/* @ts-ignore */}
-          <Send size={18} color={input.trim() ? '#ffffff' : '#94a3b8'} className="ml-1" />
+          <Send size={18} color={input.trim() ? '#ffffff' : '#94a3b8'} style={{ marginLeft: 4 }} />
         </TouchableOpacity>
       </View>
+
+      {/* History Modal */}
+      <Modal visible={historyModalVisible} animationType="slide" transparent={true}>
+        <View className="flex-1 bg-slate-900/50 justify-end">
+          <View className="bg-white h-[85%] rounded-t-3xl flex-col">
+            {/* Modal Header */}
+            <View className="px-5 py-4 border-b border-slate-100 flex-row items-center justify-between">
+              <Text className="text-[16px] font-black text-slate-800 tracking-tight">Communication History</Text>
+              <TouchableOpacity onPress={() => setHistoryModalVisible(false)} className="bg-slate-100 p-2 rounded-full">
+                {/* @ts-ignore */}
+                <X size={18} color="#475569" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Filter */}
+            <View className="px-4 py-3 border-b border-slate-100">
+              <View className="bg-slate-50 border border-slate-200 rounded-xl p-1 flex-row">
+                {['All', 'Chat', 'Email', 'Call'].map((tab) => {
+                  const isActive = historyFilter === tab;
+                  return (
+                    <TouchableOpacity
+                      key={tab}
+                      onPress={() => setHistoryFilter(tab)}
+                      style={[
+                        { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 8 },
+                        isActive ? { backgroundColor: '#108c2d' } : { backgroundColor: 'transparent' }
+                      ]}
+                    >
+                      <Text style={[
+                        { fontSize: 12, fontWeight: 'bold' },
+                        isActive ? { color: 'white' } : { color: '#64748b' }
+                      ]}>
+                        {tab}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* List */}
+            <ScrollView className="flex-1 bg-[#f4f7f9]" contentContainerStyle={{ paddingBottom: 20 }}>
+              {historyGroups.length === 0 ? (
+                <View className="items-center justify-center pt-20">
+                  {/* @ts-ignore */}
+                  <History size={40} color="#cbd5e1" style={{ marginBottom: 16 }} />
+                  <Text className="text-slate-400 font-bold">No history found</Text>
+                </View>
+              ) : (
+                historyGroups.map((group) => (
+                  <View key={group.date} className="mb-2">
+                    <View className="px-4 py-2">
+                      <View className="bg-[#e2f5e9] px-3 py-1 rounded-full self-start">
+                        <Text className="text-[10px] text-[#108c2d] font-bold tracking-wider uppercase">{group.date}</Text>
+                      </View>
+                    </View>
+                    {group.items.map((item, idx) => (
+                      <View key={item.id || idx} className="bg-white px-4 py-3 border-b border-slate-100 flex-row items-start">
+                        <View 
+                          className="w-10 h-10 rounded-full items-center justify-center mr-3 mt-1"
+                          style={{ backgroundColor: item.type === 'Chat' ? '#dcfce7' : item.type === 'Email' ? '#ede9fe' : '#ffedd5' }}
+                        >
+                          {item.type === 'Chat' ? <MessageSquare size={16} color="#108c2d" /> :
+                           item.type === 'Email' ? <Mail size={16} color="#7c3aed" /> :
+                           item.callType === 'incoming' ? <PhoneIncoming size={16} color="#ea580c" /> :
+                           <PhoneOutgoing size={16} color="#ea580c" />}
+                        </View>
+                        <View className="flex-1">
+                          <View className="flex-row justify-between items-center mb-1">
+                            <Text className="text-[14px] font-bold text-slate-800">{item.title}</Text>
+                            <Text className="text-[10px] font-bold text-slate-400">{item.time}</Text>
+                          </View>
+                          <Text className="text-[12px] text-slate-500 leading-tight" numberOfLines={2}>{item.desc}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
