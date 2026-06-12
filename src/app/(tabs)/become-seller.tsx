@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, CheckCircle2, Building2, User, Landmark, FileText, Check, ArrowRight, ArrowLeft } from 'lucide-react-native';
+import { ChevronLeft, CheckCircle2, Building2, User, Landmark, FileText, Check, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react-native';
 import { apiClient } from '@/core/api/axios';
 import * as SecureStore from 'expo-secure-store';
 
@@ -12,6 +12,13 @@ export default function BecomeSellerScreen() {
     const [data, setData] = useState<any>(null);
     const [success, setSuccess] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
+    const [packagesModalVisible, setPackagesModalVisible] = useState(false);
+
+    const packagesList = [
+        { name: 'Starter', meetings: '5', price: '9,999', features: ['15 Pre-scheduled Meetings', 'Verified Buyer Access', 'Meeting Scheduler Access'] },
+        { name: 'Growth', meetings: '15', price: '24,999', popular: true, features: ['15 Pre-scheduled Meetings', 'Verified Buyer Access', 'Priority Meeting Scheduler', 'Meeting Analytics Report'] },
+        { name: 'Pro', meetings: '30', price: '44,999', features: ['30 Pre-scheduled Meetings', 'Verified Buyer Access', 'Priority Meeting Scheduler', 'Meeting Analytics Report', 'Featured in Buyer List'] }
+    ];
 
     // Select Modal State
     const [selectModalVisible, setSelectModalVisible] = useState(false);
@@ -51,6 +58,7 @@ export default function BecomeSellerScreen() {
         aadhaarCardFrontUrl: '',
         cancelledChequeUrl: '',
         representativePhotoUrl: '',
+        selectedPlan: 'Growth',
     });
 
     useEffect(() => {
@@ -106,6 +114,7 @@ export default function BecomeSellerScreen() {
                     aadhaarCardFrontUrl: fetchedData.aadhaarCardFrontUrl || '',
                     cancelledChequeUrl: fetchedData.cancelledChequeUrl || '',
                     representativePhotoUrl: fetchedData.representativePhotoUrl || '',
+                    selectedPlan: 'Growth',
                 });
             }
         } catch (err) {
@@ -158,7 +167,7 @@ export default function BecomeSellerScreen() {
                     ifscCode: formData.ifscCode,
                     branch: formData.branch,
                     accountType: formData.accountType,
-                    selectedPlan: 'Growth'
+                    selectedPlan: formData.selectedPlan
                 }
             }, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -298,6 +307,27 @@ export default function BecomeSellerScreen() {
 
             <ScrollView className="flex-1" contentContainerStyle={{ padding: 20, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
 
+                {/* View Packages Banner */}
+                {currentStep < 5 && (
+                    <TouchableOpacity 
+                        onPress={() => setPackagesModalVisible(true)} 
+                        className="bg-[#f0faf2] border border-[#e4f6e8] p-3 rounded-2xl mb-4 flex-row items-center justify-between shadow-sm"
+                    >
+                        <View className="flex-row items-center">
+                            <View className="w-8 h-8 bg-[#108c2d] rounded-full items-center justify-center mr-3">
+                                <Sparkles size={14} color="white" />
+                            </View>
+                            <View>
+                                <Text className="text-[12px] font-black text-slate-800 uppercase tracking-tight">Meeting Packages</Text>
+                                <Text className="text-[10px] text-slate-500 font-bold">Tap to view available plans</Text>
+                            </View>
+                        </View>
+                        <View className="bg-white px-3 py-1.5 rounded-full border border-slate-200">
+                            <Text className="text-[10px] font-black text-[#108c2d] uppercase">View Plans</Text>
+                        </View>
+                    </TouchableOpacity>
+                )}
+
                 <View className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
 
                     {currentStep === 1 && (
@@ -384,11 +414,64 @@ export default function BecomeSellerScreen() {
                                 <Text className="text-[16px] font-black text-slate-800 tracking-tight uppercase">Review & Submit</Text>
                             </View>
 
+                            <View className="mb-6">
+                                <View className="bg-[#f0faf2] p-3 rounded-xl border border-[#e4f6e8] mb-4 flex-row items-center">
+                                    <View className="w-10 h-10 bg-[#108c2d] rounded-full items-center justify-center mr-3">
+                                        <Sparkles size={18} color="white" />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="text-[12px] font-black text-slate-800 leading-tight">Get Verified Meetings with Verified Buyers</Text>
+                                        <Text className="text-[10px] text-slate-500 font-semibold mt-0.5">Connect with quality, pre-verified buyers.</Text>
+                                    </View>
+                                </View>
+
+                                <Text className="text-[13px] font-black text-slate-800 uppercase mb-3 tracking-wider">Choose Your Meeting Package</Text>
+
+                                {packagesList.map((plan) => {
+                                    const isSelected = formData.selectedPlan === plan.name;
+                                    return (
+                                        <TouchableOpacity
+                                            key={plan.name}
+                                            onPress={() => setFormData({ ...formData, selectedPlan: plan.name })}
+                                            className={`mb-3 p-4 rounded-xl border-2 ${isSelected ? 'border-[#108c2d] bg-[#f0faf2]' : 'border-slate-200 bg-white'}`}
+                                        >
+                                            {plan.popular && (
+                                                <View className="absolute -top-2.5 self-center bg-[#fff3cd] px-2 py-0.5 rounded-full border border-[#ffeeba]">
+                                                    <Text className="text-[#856404] text-[8px] font-black uppercase tracking-wide">★ Most Popular</Text>
+                                                </View>
+                                            )}
+                                            
+                                            <View className="flex-row justify-between items-center mb-3">
+                                                <View>
+                                                    <Text className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{plan.name}</Text>
+                                                    <View className="flex-row items-baseline mt-1">
+                                                        <Text className="text-[22px] font-black text-[#108c2d]">{plan.meetings}</Text>
+                                                        <Text className="text-[10px] text-slate-600 font-bold uppercase ml-1">Meetings</Text>
+                                                    </View>
+                                                </View>
+                                                <View className="items-end">
+                                                    <Text className="text-[15px] font-black text-slate-800">₹ {plan.price}</Text>
+                                                    <Text className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">+ GST</Text>
+                                                </View>
+                                            </View>
+
+                                            <View className="border-t border-slate-200/50 pt-3 space-y-1.5">
+                                                {plan.features.map((feat, fidx) => (
+                                                    <View key={fidx} className="flex-row items-center">
+                                                        <Check size={12} color="#108c2d" className="mr-2" strokeWidth={3} />
+                                                        <Text className="text-[10.5px] text-slate-600 font-semibold">{feat}</Text>
+                                                    </View>
+                                                ))}
+                                            </View>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+
                             <View className="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-2">
                                 <View className="mb-3"><Text className="text-[10px] text-slate-400 font-bold uppercase">Brand Name</Text><Text className="font-black text-slate-800">{formData.brandName}</Text></View>
                                 <View className="mb-3"><Text className="text-[10px] text-slate-400 font-bold uppercase">Category</Text><Text className="font-black text-slate-800">{formData.businessCategory}</Text></View>
-                                <View className="mb-3"><Text className="text-[10px] text-slate-400 font-bold uppercase">Primary Contact</Text><Text className="font-black text-slate-800">{formData.contactFirstName} {formData.contactLastName}</Text></View>
-                                <View className="mb-3"><Text className="text-[10px] text-slate-400 font-bold uppercase">Bank Account</Text><Text className="font-black text-slate-800">{formData.bankName} - {formData.accountNumber}</Text></View>
+                                <View className="mb-3"><Text className="text-[10px] text-slate-400 font-bold uppercase">Meeting Package</Text><Text className="font-black text-[#108c2d]">{formData.selectedPlan} Package</Text></View>
                             </View>
 
                             <Text className="text-[11px] text-slate-500 text-center font-medium leading-5">By submitting, you agree to IHWE 2026's Terms and Conditions for sellers.</Text>
@@ -445,6 +528,65 @@ export default function BecomeSellerScreen() {
                                     </TouchableOpacity>
                                 );
                             })}
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Packages View Modal */}
+            <Modal visible={packagesModalVisible} animationType="slide" transparent>
+                <View className="flex-1 bg-slate-900/60 justify-end">
+                    <View className="bg-[#f4f7f9] rounded-t-3xl min-h-[60%] max-h-[85%] pb-6">
+                        <View className="p-5 border-b border-slate-200 flex-row justify-between items-center bg-white rounded-t-3xl shadow-sm">
+                            <View className="flex-row items-center">
+                                <View className="w-8 h-8 bg-[#108c2d] rounded-full items-center justify-center mr-2">
+                                    <Sparkles size={14} color="white" />
+                                </View>
+                                <Text className="font-black text-[16px] text-slate-800 uppercase tracking-tight">Meeting Packages</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => setPackagesModalVisible(false)} className="bg-slate-100 p-2 rounded-full">
+                                <Text className="font-black text-slate-500 text-[10px] uppercase px-1">Close</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView className="p-4" showsVerticalScrollIndicator={false}>
+                            <Text className="text-[11px] font-bold text-slate-500 text-center mb-4 px-4 leading-5">These packages will be available for selection in the final step (Review & Submit).</Text>
+                            
+                            {packagesList.map((plan) => (
+                                <View
+                                    key={plan.name}
+                                    className="mb-4 p-5 rounded-2xl border-2 border-slate-200 bg-white shadow-sm"
+                                >
+                                    {plan.popular && (
+                                        <View className="absolute -top-3 self-center bg-[#fff3cd] px-3 py-1 rounded-full border border-[#ffeeba]">
+                                            <Text className="text-[#856404] text-[9px] font-black uppercase tracking-wide">★ Most Popular</Text>
+                                        </View>
+                                    )}
+                                    
+                                    <View className="flex-row justify-between items-center mb-4 mt-1">
+                                        <View>
+                                            <Text className="text-[12px] font-black text-slate-500 uppercase tracking-widest">{plan.name}</Text>
+                                            <View className="flex-row items-baseline mt-1">
+                                                <Text className="text-[26px] font-black text-[#108c2d] leading-none">{plan.meetings}</Text>
+                                                <Text className="text-[11px] text-slate-600 font-bold uppercase ml-1">Meetings</Text>
+                                            </View>
+                                        </View>
+                                        <View className="items-end">
+                                            <Text className="text-[18px] font-black text-slate-800">₹ {plan.price}</Text>
+                                            <Text className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">+ GST</Text>
+                                        </View>
+                                    </View>
+
+                                    <View className="border-t border-slate-100 pt-4 space-y-2">
+                                        {plan.features.map((feat, fidx) => (
+                                            <View key={fidx} className="flex-row items-center">
+                                                <Check size={14} color="#108c2d" className="mr-2" strokeWidth={3} />
+                                                <Text className="text-[11px] text-slate-600 font-bold">{feat}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                </View>
+                            ))}
+                            <View className="h-10" />
                         </ScrollView>
                     </View>
                 </View>

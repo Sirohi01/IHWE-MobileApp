@@ -69,7 +69,7 @@ export default function ProfileDetailsScreen() {
                 landlineNo: formData.landlineNo
             };
 
-            const response = await apiClient.put('/exhibitor-auth/update-profile', payload);
+            const response = await apiClient.put(`/exhibitor-auth/update-profile?id=${profile._id}`, payload);
             Alert.alert("Success", "Profile updated successfully.");
             setProfile(response.data.data);
             setIsEditModalOpen(false);

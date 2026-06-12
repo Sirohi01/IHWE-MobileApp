@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Home, Users, QrCode, MessageSquare, Menu } from 'lucide-react-native';
 import TourOverlay from '@/components/dashboard/TourOverlay';
+// import FloatingContactButtons from '@/components/dashboard/FloatingContactButtons';
 
 export default function TabLayout() {
   return (
@@ -182,8 +183,16 @@ export default function TabLayout() {
             title: 'Feedback'
           }}
         />
+        <Tabs.Screen
+          name="document-center"
+          options={{
+            href: null,
+            title: 'Document Center'
+          }}
+        />
       </Tabs>
       <TourOverlay />
+      {/* <FloatingContactButtons /> */}
     </>
   );
 }

@@ -243,7 +243,7 @@ export default function HomeTab() {
         {/* Payment Overview & Important Updates Grid */}
         <View className="mb-2 w-full">
 
-          <SectionHeader title="PAYMENT OVERVIEW" rightText="View Details" />
+          <SectionHeader title="PAYMENT OVERVIEW" rightText="View Details" onPressRight={() => router.push('/(tabs)/invoices')} />
           <View className="w-full bg-white rounded-xl p-4 border border-slate-200 shadow-sm mb-2">
             <View className="w-full flex-row justify-between items-start mb-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
               <View>

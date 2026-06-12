@@ -245,7 +245,7 @@ export default function MoreMenuScreen() {
         <View className="bg-white border-y border-slate-200">
           <MenuItem
             icon={Store}
-            title="My Event Dashboard"
+            title="My Event"
             subtitle="Manage your overall event participation"
             iconBg="#eff6ff" iconColor="#3b82f6"
             onPress={() => router.push('/(tabs)/myevent')}
@@ -285,6 +285,14 @@ export default function MoreMenuScreen() {
         {/* Finance & Documents */}
         <SectionTitle title="Finance & Documents" />
         <View className="bg-white border-y border-slate-200">
+          <MenuItem
+            icon={FileText}
+            title="Document Center"
+            subtitle="Manage MSME and general documents"
+            iconBg="#e0f2fe" iconColor="#0ea5e9"
+            onPress={() => router.push('/(tabs)/document-center')}
+            disabled={false}
+          />
           <MenuItem
             icon={CreditCard}
             title="Make Payment"
@@ -406,11 +414,11 @@ export default function MoreMenuScreen() {
 
       {/* Floating Help Button */}
       <TouchableOpacity
-        className="absolute bottom-6 right-6 w-14 h-14 bg-[#1a3a7c] rounded-full items-center justify-center shadow-lg shadow-blue-900/40 z-50"
+        className="absolute bottom-3 right-6 w-11 h-11 bg-[#1a3a7c] rounded-full items-center justify-center shadow-lg shadow-blue-900/40 z-50"
         onPress={() => setShowHelpModal(true)}
       >
         {/* @ts-ignore */}
-        <Info color="white" size={26} />
+        <Info color="white" size={20} />
       </TouchableOpacity>
 
       {/* Help & Social Modal */}
