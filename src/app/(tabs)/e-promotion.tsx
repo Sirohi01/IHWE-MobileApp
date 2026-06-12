@@ -89,12 +89,14 @@ export default function EPromotionScreen() {
                             { text: "Build Brand Recall Before the Exhibition", icon: MonitorPlay, color: "#8b5cf6" },
                             { text: "Generate Pre-qualified Leads", icon: LineChart, color: "#10b981" },
                         ].map((item, i) => (
-                            <View key={i} className={`flex-row items-center py-3 ${i !== 3 ? 'border-b border-slate-50' : ''}`}>
-                                <View className="w-10 h-10 rounded-full items-center justify-center bg-slate-50 mr-3" style={{ backgroundColor: item.color + '15' }}>
-                                    <item.icon size={20} color={item.color} />
+                            <React.Fragment key={i}>
+                                <View className={`flex-row items-center py-3 ${i !== 3 ? 'border-b border-slate-50' : ''}`}>
+                                    <View className="w-10 h-10 rounded-full items-center justify-center bg-slate-50 mr-3" style={{ backgroundColor: item.color + '15' }}>
+                                        <item.icon size={20} color={item.color} />
+                                    </View>
+                                    <Text className="flex-1 text-slate-700 text-[14px] font-semibold">{item.text}</Text>
                                 </View>
-                                <Text className="flex-1 text-slate-700 text-[14px] font-semibold">{item.text}</Text>
-                            </View>
+                            </React.Fragment>
                         ))}
                     </View>
                 </View>
@@ -121,37 +123,41 @@ export default function EPromotionScreen() {
                             const borderColor = pkg.borderColor || (isGrowth ? "#f97316" : (isPremium ? "#166534" : "#e2e8f0"));
 
                             return (
-                                <View key={pkg._id || index} className="bg-white rounded-2xl mb-4 shadow-sm overflow-hidden" style={{ borderWidth: 2, borderColor }}>
-                                    {pkg.badgeText && (
-                                        <View className="bg-amber-500 self-center px-4 py-1 rounded-b-lg absolute top-0 z-10">
-                                            <Text className="text-white text-[10px] font-bold uppercase tracking-wider">{pkg.badgeText}</Text>
-                                        </View>
-                                    )}
-
-                                    <View className="p-5 pt-8 bg-slate-50 border-b border-slate-100 items-center">
-                                        <Text className={`text-[18px] font-black text-center mb-1 ${pkg.textColor || 'text-slate-800'}`}>
-                                            {pkg.title?.replace(/<br\s*\/?>/gi, ' ')}
-                                        </Text>
-                                        <Text className="text-sm text-slate-500 font-semibold mb-3 text-center">{pkg.subtitle}</Text>
-                                        <View className="flex-row items-baseline">
-                                            <Text className={`text-2xl font-black ${pkg.priceColor || 'text-slate-800'}`}>₹ {pkg.price?.toLocaleString()}</Text>
-                                            <Text className="text-[10px] text-slate-400 font-bold ml-1">{pkg.gstText}</Text>
-                                        </View>
-                                    </View>
-
-                                    <View className="p-5">
-                                        {(pkg.features || []).map((feature: string, i: number) => (
-                                            <View key={i} className="flex-row items-start mb-3">
-                                                <CheckCircle2 size={16} color="#16a34a" className="mt-0.5 mr-2" />
-                                                <Text className="text-slate-600 flex-1 text-[13px] leading-relaxed font-medium">{feature}</Text>
+                                <React.Fragment key={pkg._id || index}>
+                                    <View className="bg-white rounded-2xl mb-4 shadow-sm overflow-hidden" style={{ borderWidth: 2, borderColor }}>
+                                        {pkg.badgeText && (
+                                            <View className="bg-amber-500 self-center px-4 py-1 rounded-b-lg absolute top-0 z-10">
+                                                <Text className="text-white text-[10px] font-bold uppercase tracking-wider">{pkg.badgeText}</Text>
                                             </View>
-                                        ))}
+                                        )}
 
-                                        <TouchableOpacity className={`${btnColor} rounded-xl py-3.5 items-center justify-center mt-3 shadow-sm`}>
-                                            <Text className="text-white font-bold text-[14px]">{pkg.buttonText || 'Book Now'}</Text>
-                                        </TouchableOpacity>
+                                        <View className="p-5 pt-8 bg-slate-50 border-b border-slate-100 items-center">
+                                            <Text className={`text-[18px] font-black text-center mb-1 ${pkg.textColor || 'text-slate-800'}`}>
+                                                {pkg.title?.replace(/<br\s*\/?>/gi, ' ')}
+                                            </Text>
+                                            <Text className="text-sm text-slate-500 font-semibold mb-3 text-center">{pkg.subtitle}</Text>
+                                            <View className="flex-row items-baseline">
+                                                <Text className={`text-2xl font-black ${pkg.priceColor || 'text-slate-800'}`}>₹ {pkg.price?.toLocaleString()}</Text>
+                                                <Text className="text-[10px] text-slate-400 font-bold ml-1">{pkg.gstText}</Text>
+                                            </View>
+                                        </View>
+
+                                        <View className="p-5">
+                                            {(pkg.features || []).map((feature: string, i: number) => (
+                                                <React.Fragment key={i}>
+                                                    <View className="flex-row items-start mb-3">
+                                                        <CheckCircle2 size={16} color="#16a34a" className="mt-0.5 mr-2" />
+                                                        <Text className="text-slate-600 flex-1 text-[13px] leading-relaxed font-medium">{feature}</Text>
+                                                    </View>
+                                                </React.Fragment>
+                                            ))}
+
+                                            <TouchableOpacity className={`${btnColor} rounded-xl py-3.5 items-center justify-center mt-3 shadow-sm`}>
+                                                <Text className="text-white font-bold text-[14px]">{pkg.buttonText || 'Book Now'}</Text>
+                                            </TouchableOpacity>
+                                        </View>
                                     </View>
-                                </View>
+                                </React.Fragment>
                             );
                         })
                     )}
@@ -167,12 +173,14 @@ export default function EPromotionScreen() {
                             { label: "Social\nPromotions", icon: Share2, color: "#8b5cf6" },
                             { label: "WhatsApp\nCampaigns", icon: MessageCircle, color: "#10b981" },
                         ].map((item, i) => (
-                            <View key={i} className="bg-white rounded-2xl w-[48%] p-4 items-center shadow-sm border border-slate-100 mb-3">
-                                <View className="w-12 h-12 rounded-full items-center justify-center mb-2 bg-slate-50" style={{ backgroundColor: item.color + '15' }}>
-                                    <item.icon size={24} color={item.color} />
+                            <React.Fragment key={i}>
+                                <View className="bg-white rounded-2xl w-[48%] p-4 items-center shadow-sm border border-slate-100 mb-3">
+                                    <View className="w-12 h-12 rounded-full items-center justify-center mb-2 bg-slate-50" style={{ backgroundColor: item.color + '15' }}>
+                                        <item.icon size={24} color={item.color} />
+                                    </View>
+                                    <Text className="text-center text-[12px] font-bold text-slate-700 leading-tight">{item.label}</Text>
                                 </View>
-                                <Text className="text-center text-[12px] font-bold text-slate-700 leading-tight">{item.label}</Text>
-                            </View>
+                            </React.Fragment>
                         ))}
                     </View>
                 </View>
@@ -188,10 +196,12 @@ export default function EPromotionScreen() {
                             ["Push Notification Alert", "₹ 8,000"],
                             ["Influencer Collab", "₹ 20,000"],
                         ].map((item, i) => (
-                            <View key={i} className={`flex-row justify-between items-center p-3 ${i !== 4 ? 'border-b border-slate-50' : ''}`}>
-                                <Text className="text-slate-600 text-[13px] font-medium flex-1">{item[0]}</Text>
-                                <Text className="text-slate-800 font-bold">{item[1]}</Text>
-                            </View>
+                            <React.Fragment key={i}>
+                                <View className={`flex-row justify-between items-center p-3 ${i !== 4 ? 'border-b border-slate-50' : ''}`}>
+                                    <Text className="text-slate-600 text-[13px] font-medium flex-1">{item[0]}</Text>
+                                    <Text className="text-slate-800 font-bold">{item[1]}</Text>
+                                </View>
+                            </React.Fragment>
                         ))}
                         <View className="p-3 bg-slate-50 rounded-b-xl">
                             <Text className="text-[10px] text-slate-400 text-center font-medium">*GST Extra on all add-ons</Text>
@@ -218,7 +228,9 @@ export default function EPromotionScreen() {
 
                         <View className="flex-row justify-center mt-6">
                             {testimonials.map((_, i) => (
-                                <View key={i} className={`h-1.5 rounded-full mx-1 ${activeTestimonial === i ? 'w-5 bg-[#d6ff63]' : 'w-2 bg-white/30'}`} />
+                                <React.Fragment key={i}>
+                                    <View className={`h-1.5 rounded-full mx-1 ${activeTestimonial === i ? 'w-5 bg-[#d6ff63]' : 'w-2 bg-white/30'}`} />
+                                </React.Fragment>
                             ))}
                         </View>
                     </View>

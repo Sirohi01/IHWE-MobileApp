@@ -68,7 +68,7 @@ export default function ChatScreen() {
 
   const setupSocket = (dashboardData: any) => {
     const roomId = dashboardData._id;
-    const s = io(SERVER_URL, { 
+    const s = io(SERVER_URL, {
       transports: ['websocket', 'polling'],
       extraHeaders: { 'ngrok-skip-browser-warning': 'true' }
     });

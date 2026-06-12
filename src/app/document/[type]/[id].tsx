@@ -41,12 +41,15 @@ export default function DocumentViewerScreen() {
       }
       if (setts?.authorizedSignature) {
         const sigUrl = setts.authorizedSignature.startsWith('http') ? setts.authorizedSignature : `https://nenita-untoured-nonhesitantly.ngrok-free.dev${setts.authorizedSignature}`;
+        // const sigUrl = setts.authorizedSignature.startsWith('http') ? setts.authorizedSignature : `https://api.ihwe.in${setts.authorizedSignature}`;
+
         const { uri } = await FileSystem.downloadAsync(sigUrl, FileSystem.documentDirectory + 'sig.png', { headers: { 'ngrok-skip-browser-warning': 'true' } });
         const b64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
         setSigBase64(`data:image/png;base64,${b64}`);
       }
       if (setts?.companyStamp) {
         const stampUrl = setts.companyStamp.startsWith('http') ? setts.companyStamp : `https://nenita-untoured-nonhesitantly.ngrok-free.dev${setts.companyStamp}`;
+        // const stampUrl = setts.companyStamp.startsWith('http') ? setts.companyStamp : `https://api.ihwe.in${setts.companyStamp}`;
         const { uri } = await FileSystem.downloadAsync(stampUrl, FileSystem.documentDirectory + 'stamp.png', { headers: { 'ngrok-skip-browser-warning': 'true' } });
         const b64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
         setStampBase64(`data:image/png;base64,${b64}`);

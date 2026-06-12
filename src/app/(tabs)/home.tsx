@@ -42,7 +42,7 @@ export default function HomeTab() {
 
       if (res.data.success) {
         setData(res.data.data);
-        
+
         // Fetch dynamic Important Updates
         apiClient.get(`/exhibitor-auth/updates?id=${res.data.data._id}&page=1&limit=5`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -51,7 +51,7 @@ export default function HomeTab() {
             setUpdates(updatesRes.data.data || []);
           }
         }).catch(err => console.log("Failed to fetch updates:", err));
-        
+
       } else if (res.data.message === 'Token expired or invalid') {
         handleLogout();
       }
