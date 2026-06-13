@@ -1,7 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Tabs, router } from 'expo-router';
-import { Home, Users, QrCode, MessageSquare, Menu } from 'lucide-react-native';
+import { Home, Users, QrCode, MessageSquare, Menu, Bell } from 'lucide-react-native';
 import * as SecureStore from 'expo-secure-store';
 import TourOverlay from '@/components/dashboard/TourOverlay';
 // import FloatingContactButtons from '@/components/dashboard/FloatingContactButtons';
@@ -97,6 +97,20 @@ export default function TabLayout() {
               // @ts-ignore
               <Menu color={color} size={size} />
             )
+          }}
+        />
+        <Tabs.Screen
+          name="reminders"
+          options={{
+            href: null,
+            title: 'Alerts'
+          }}
+        />
+        <Tabs.Screen
+          name="my-leads"
+          options={{
+            href: null,
+            title: 'My Leads'
           }}
         />
         <Tabs.Screen

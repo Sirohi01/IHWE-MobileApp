@@ -175,7 +175,13 @@ export default function MoreMenuScreen() {
         {/* Background design elements */}
         <View className="absolute right-[-40px] top-[-20px] w-40 h-40 rounded-full border-[15px] border-blue-50/50" />
 
-        <Text className="text-[#0f172a] text-[22px] font-black tracking-wider mb-5">Menu</Text>
+        <View className="flex-row justify-between items-center mb-5 relative z-10">
+          <Text className="text-[#0f172a] text-[22px] font-black tracking-wider">Menu</Text>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/reminders')} className="bg-slate-100 p-2.5 rounded-full border border-slate-200">
+            {/* @ts-ignore */}
+            <Bell size={20} color="#0f172a" />
+          </TouchableOpacity>
+        </View>
 
         <View className="flex-row items-center relative z-10">
           <View className="w-14 h-14 bg-indigo-50 rounded-full items-center justify-center border border-indigo-100 mr-4">
@@ -278,6 +284,14 @@ export default function MoreMenuScreen() {
             subtitle="Manage your exhibitor passes & badges"
             iconBg="#f0fdf4" iconColor="#22c55e"
             onPress={() => router.push('/(tabs)/passes-and-hospitality')}
+            disabled={false}
+          />
+          <MenuItem
+            icon={Users}
+            title="My Captured Leads"
+            subtitle="View your scanned visitor leads"
+            iconBg="#e0e7ff" iconColor="#4f46e5"
+            onPress={() => router.push('/(tabs)/my-leads')}
             disabled={false}
           />
         </View>

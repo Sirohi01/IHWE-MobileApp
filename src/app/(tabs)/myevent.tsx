@@ -58,7 +58,7 @@ export default function MyEventTab() {
 
         {/* 1. Sleek Hero Banner */}
         <ImageBackground
-          source={{ uri: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=80&w=2070&auto=format&fit=crop' }}
+          source={require('../../../assets/images/event.png')}
           className="w-full h-[320px] justify-start pt-12 relative"
         >
           <View className="absolute inset-0 bg-black/60" />
@@ -75,14 +75,14 @@ export default function MyEventTab() {
             <View className="bg-white/20 px-4 py-1.5 rounded-full backdrop-blur-md border border-white/30 flex-row items-center">
               {/* @ts-ignore */}
               <Sparkles size={14} color="#a3e635" />
-              <Text className="text-white font-bold text-[12px] ml-1.5 uppercase tracking-widest">Medical Expo</Text>
+              <Text className="text-white font-bold text-[12px] ml-1.5 uppercase tracking-widest">My Event</Text>
             </View>
           </View>
 
-          <View className="px-6 mt-12 z-10 items-center">
+          {/* <View className="px-6 mt-12 z-10 items-center">
             <Text className="text-white text-[32px] font-black leading-tight tracking-tight text-center" style={{ textShadowColor: 'rgba(0,0,0,0.7)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4 }}>9th IHWE India</Text>
             <Text className="text-[#a3e635] text-[18px] font-bold text-center mt-1" style={{ textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 }}>2026 Edition</Text>
-          </View>
+          </View> */}
         </ImageBackground>
 
         <View className="px-5 -mt-10 z-20">
@@ -144,7 +144,11 @@ export default function MyEventTab() {
 
                   <View className="items-center">
                     <View className="p-2 bg-white border-[2px] border-slate-100 rounded-[20px] shadow-sm mb-2">
-                      <QrCode size={100} color="#0f172a" strokeWidth={1.5} />
+                      {data?.qrCode ? (
+                        <Image source={{ uri: data.qrCode }} style={{ width: 100, height: 100 }} resizeMode="contain" />
+                      ) : (
+                        <QrCode size={100} color="#0f172a" strokeWidth={1.5} />
+                      )}
                     </View>
                     <Text className="text-slate-400 font-bold uppercase text-[9px] tracking-widest mb-0.5">Pass ID</Text>
                     <Text className="text-slate-800 font-mono text-[11px] font-bold">{passId}</Text>
@@ -202,7 +206,7 @@ export default function MyEventTab() {
                 className="bg-white rounded-[24px] shadow-sm border border-slate-200 overflow-hidden relative mb-2 mx-1"
               >
                 <Image
-                  source={{ uri: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=2074&auto=format&fit=crop' }}
+                  source={require('../../../assets/images/event.png')}
                   className="w-full h-40 opacity-90"
                 />
                 <View className="absolute inset-0 bg-[#0f234b]/60 items-center justify-center">
