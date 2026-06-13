@@ -35,7 +35,7 @@ export default function AddOnServicesScreen() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [paying, setPaying] = useState(false);
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('All Items');
   const [exhibitorData, setExhibitorData] = useState<any>(null);
@@ -57,7 +57,7 @@ export default function AddOnServicesScreen() {
     try {
       setLoading(true);
       const token = await SecureStore.getItemAsync('exhibitorToken');
-      
+
       // Get exhibitor profile
       const profRes = await apiClient.get('/exhibitor-auth/dashboard');
       let exhId = '';
@@ -153,7 +153,7 @@ export default function AddOnServicesScreen() {
         body: JSON.stringify({ amount: cartTotalWithFee }),
       });
       const orderData = await orderRes.json();
-      
+
       if (!orderData.success) {
         Alert.alert('Error', orderData.message || 'Failed to create order');
         setPaying(false);
@@ -185,7 +185,7 @@ export default function AddOnServicesScreen() {
         }),
       });
       const verifyData = await verifyRes.json();
-      
+
       if (verifyData.success) {
         Alert.alert('Success', 'Payment successful! Receipt sent to your email.');
         setCart([]);
@@ -242,12 +242,23 @@ export default function AddOnServicesScreen() {
 
   const renderItem = ({ item }: { item: any }) => {
     const inCart = cart.find(c => c.accessoryId === item._id);
-    const finalImageUrl = item.imageUrl ? (item.imageUrl.startsWith('http') ? item.imageUrl : `${SERVER_URL}${item.imageUrl}`) : null;
+
+    let finalImageUrl = null;
+    if (item.imageUrl) {
+      if (item.imageUrl.startsWith('http')) {
+        finalImageUrl = item.imageUrl;
+      } else {
+        const cleanServer = SERVER_URL.endsWith('/') ? SERVER_URL.slice(0, -1) : SERVER_URL;
+        const cleanPath = item.imageUrl.startsWith('/') ? item.imageUrl : `/${item.imageUrl}`;
+        finalImageUrl = `${cleanServer}${cleanPath}`;
+      }
+      finalImageUrl = encodeURI(finalImageUrl);
+    }
     return (
       <View className="bg-white w-[48%] rounded-xl mb-3 shadow-sm border border-slate-200 overflow-hidden">
         <View className="h-28 bg-slate-50 relative border-b border-slate-100 items-center justify-center p-2">
           {finalImageUrl ? (
-            <Image source={{ uri: finalImageUrl }} className="w-full h-full" resizeMode="contain" />
+            <Image source={{ uri: finalImageUrl, headers: { 'ngrok-skip-browser-warning': 'true' } }} className="w-full h-full" resizeMode="contain" />
           ) : (
             // @ts-ignore
             <ImageIcon size={30} color="#cbd5e1" />
@@ -264,7 +275,7 @@ export default function AddOnServicesScreen() {
             <Text className="text-[#1a3a7c] font-black text-[13px] mr-1">{fmt(item.price)}</Text>
             <Text className="text-slate-400 font-bold text-[8px]">/{item.unit || 'Unit'}</Text>
           </View>
-          
+
           {inCart ? (
             <View className="flex-row items-center justify-between bg-blue-50 border border-blue-200 rounded-lg h-8 px-1">
               <TouchableOpacity onPress={() => updateQty(item._id, -1)} className="w-8 h-full items-center justify-center">
@@ -278,12 +289,11 @@ export default function AddOnServicesScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => addToCart(item)}
               disabled={(item.availableQty || 0) <= 0}
-              className={`flex-row items-center justify-center h-8 rounded-lg border ${
-                (item.availableQty || 0) <= 0 ? 'bg-slate-100 border-slate-200' : 'bg-white border-[#1a3a7c]'
-              }`}
+              className={`flex-row items-center justify-center h-8 rounded-lg border ${(item.availableQty || 0) <= 0 ? 'bg-slate-100 border-slate-200' : 'bg-white border-[#1a3a7c]'
+                }`}
             >
               {/* @ts-ignore */}
               <ShoppingCart size={12} color={(item.availableQty || 0) <= 0 ? "#94a3b8" : "#1a3a7c"} className="mr-1" />
@@ -311,13 +321,13 @@ export default function AddOnServicesScreen() {
             <Text className="text-white text-lg font-black tracking-wider">Add On Services</Text>
           </View>
           <TouchableOpacity onPress={() => setShowCart(true)} className="relative w-10 h-10 bg-white/20 rounded-full items-center justify-center">
-             {/* @ts-ignore */}
-             <ShoppingCart size={20} color="white" />
-             {totalCartQty > 0 && (
-               <View className="absolute -top-1 -right-1 bg-red-500 w-5 h-5 rounded-full items-center justify-center border-2 border-[#1a3a7c]">
-                 <Text className="text-white text-[10px] font-bold">{totalCartQty}</Text>
-               </View>
-             )}
+            {/* @ts-ignore */}
+            <ShoppingCart size={20} color="white" />
+            {totalCartQty > 0 && (
+              <View className="absolute -top-1 -right-1 bg-red-500 w-5 h-5 rounded-full items-center justify-center border-2 border-[#1a3a7c]">
+                <Text className="text-white text-[10px] font-bold">{totalCartQty}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
         <Text className="text-blue-100 text-[12px] leading-tight z-10">Enhance your stall with premium facilities. Select items to add to your cart.</Text>
@@ -328,15 +338,15 @@ export default function AddOnServicesScreen() {
         <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
           {/* @ts-ignore */}
           <Search size={16} color="#64748b" className="mr-2" />
-          <TextInput 
-            placeholder="Search for furniture, lighting..." 
+          <TextInput
+            placeholder="Search for furniture, lighting..."
             value={searchQuery}
             onChangeText={setSearchQuery}
             className="flex-1 text-[13px] text-slate-800"
             placeholderTextColor="#94a3b8"
           />
         </View>
-        
+
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3" contentContainerStyle={{ paddingRight: 20 }}>
           {CATEGORIES.map(cat => {
             const Icon = cat.icon;
@@ -373,9 +383,9 @@ export default function AddOnServicesScreen() {
         ListEmptyComponent={
           filteredItems.length === 0 && !loading ? (
             <View className="items-center justify-center py-10 opacity-50">
-               {/* @ts-ignore */}
-               <Store size={40} color="#64748b" className="mb-2" />
-               <Text className="text-slate-500 font-bold">No items found</Text>
+              {/* @ts-ignore */}
+              <Store size={40} color="#64748b" className="mb-2" />
+              <Text className="text-slate-500 font-bold">No items found</Text>
             </View>
           ) : null
         }
@@ -420,19 +430,29 @@ export default function AddOnServicesScreen() {
             <ScrollView className="flex-1 px-4 py-2" showsVerticalScrollIndicator={false}>
               {cart.length === 0 ? (
                 <View className="items-center justify-center py-20 opacity-50">
-                   {/* @ts-ignore */}
-                   <ShoppingCart size={50} color="#94a3b8" className="mb-3" />
-                   <Text className="text-slate-500 font-bold">Your cart is empty</Text>
+                  {/* @ts-ignore */}
+                  <ShoppingCart size={50} color="#94a3b8" className="mb-3" />
+                  <Text className="text-slate-500 font-bold">Your cart is empty</Text>
                 </View>
               ) : (
                 cart.map(item => {
-                  const finalImageUrl = item.imageUrl ? (item.imageUrl.startsWith('http') ? item.imageUrl : `${SERVER_URL}${item.imageUrl}`) : null;
+                  let finalImageUrl = null;
+                  if (item.imageUrl) {
+                    if (item.imageUrl.startsWith('http')) {
+                      finalImageUrl = item.imageUrl;
+                    } else {
+                      const cleanServer = SERVER_URL.endsWith('/') ? SERVER_URL.slice(0, -1) : SERVER_URL;
+                      const cleanPath = item.imageUrl.startsWith('/') ? item.imageUrl : `/${item.imageUrl}`;
+                      finalImageUrl = `${cleanServer}${cleanPath}`;
+                    }
+                    finalImageUrl = encodeURI(finalImageUrl);
+                  }
                   const itemTotal = (item.unitPrice * item.qty) * (1 + item.gstPercent / 100);
                   return (
                     <View key={item.accessoryId} className="flex-row items-center py-3 border-b border-slate-100">
                       <View className="w-14 h-14 bg-slate-50 rounded-lg border border-slate-200 items-center justify-center p-1 mr-3">
                         {finalImageUrl ? (
-                          <Image source={{ uri: finalImageUrl }} className="w-full h-full" resizeMode="contain" />
+                          <Image source={{ uri: finalImageUrl, headers: { 'ngrok-skip-browser-warning': 'true' } }} className="w-full h-full" resizeMode="contain" />
                         ) : (
                           // @ts-ignore
                           <ImageIcon size={20} color="#cbd5e1" />
@@ -484,8 +504,8 @@ export default function AddOnServicesScreen() {
                   <Text className="text-[#0f172a] font-black text-[15px]">Total Amount</Text>
                   <Text className="text-[#16a34a] font-black text-[16px]">{fmt(cartTotalWithFee)}</Text>
                 </View>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   onPress={handleCheckout}
                   disabled={paying}
                   className="bg-[#16a34a] w-full py-3.5 rounded-xl flex-row items-center justify-center shadow-sm"
