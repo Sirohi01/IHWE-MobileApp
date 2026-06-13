@@ -17,16 +17,16 @@ interface CartItem {
   availableQty?: number;
 }
 
-const CATEGORIES = [
-  { name: 'All Items', icon: LayoutGrid },
-  { name: 'Furniture', icon: LayoutGrid },
-  { name: 'Electrical', icon: Zap },
-  { name: 'Branding', icon: Megaphone },
-  { name: 'Technology', icon: Monitor },
-  { name: 'Utilities', icon: Wrench },
-  { name: 'Hospitality', icon: Coffee },
-  { name: 'Manpower', icon: Users },
-];
+const ICONS_MAP: Record<string, any> = {
+  'Furniture': LayoutGrid,
+  'Electrical': Zap,
+  'Branding': Megaphone,
+  'Technology': Monitor,
+  'Utilities': Wrench,
+  'Hospitality': Coffee,
+  'Manpower': Users,
+  'Default': LayoutGrid
+};
 
 export default function AddOnServicesScreen() {
   const [catalog, setCatalog] = useState<any[]>([]);
@@ -358,21 +358,30 @@ export default function AddOnServicesScreen() {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3" contentContainerStyle={{ paddingRight: 20 }}>
-          {CATEGORIES.map(cat => {
-            const Icon = cat.icon;
-            const isActive = activeTab === cat.name;
-            return (
-              <TouchableOpacity
-                key={cat.name}
-                onPress={() => setActiveTab(cat.name)}
-                className={`flex-row items-center px-3 py-1.5 rounded-lg mr-2 border ${isActive ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200'}`}
-              >
-                {/* @ts-ignore */}
-                <Icon size={12} color={isActive ? "#1a3a7c" : "#64748b"} className="mr-1.5" />
-                <Text className={`text-[11px] font-bold ${isActive ? 'text-[#1a3a7c]' : 'text-slate-500'}`}>{cat.name}</Text>
-              </TouchableOpacity>
-            );
-          })}
+          {(() => {
+            const dynamicCategories = ['All Items'];
+            catalog.forEach(item => {
+              if (item.category && !dynamicCategories.includes(item.category)) {
+                dynamicCategories.push(item.category);
+              }
+            });
+
+            return dynamicCategories.map(catName => {
+              const Icon = ICONS_MAP[catName] || ICONS_MAP['Default'];
+              const isActive = activeTab === catName;
+              return (
+                <TouchableOpacity
+                  key={catName}
+                  onPress={() => setActiveTab(catName)}
+                  className={`flex-row items-center px-3 py-1.5 rounded-lg mr-2 border ${isActive ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200'}`}
+                >
+                  {/* @ts-ignore */}
+                  <Icon size={12} color={isActive ? "#1a3a7c" : "#64748b"} className="mr-1.5" />
+                  <Text className={`text-[11px] font-bold ${isActive ? 'text-[#1a3a7c]' : 'text-slate-500'}`}>{catName}</Text>
+                </TouchableOpacity>
+              );
+            });
+          })()}
         </ScrollView>
       </View>
 

@@ -74,39 +74,49 @@ export default function MoreMenuScreen() {
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [socialMedia, setSocialMedia] = useState<any>(null);
   const { startTour } = useTourStore();
 
   useEffect(() => {
     fetchData();
 
-    // Countdown Timer logic for August 21, 2026
-    const targetDate = new Date('2026-08-21T09:00:00').getTime();
+    let timer: ReturnType<typeof setInterval>;
 
-    const updateTime = () => {
-      const now = new Date().getTime();
-      const difference = targetDate - now;
+    if (data?.eventId?.startDate) {
+      const targetDate = new Date(data.eventId.startDate).getTime();
 
-      if (difference > 0) {
-        setTimeLeft({
-          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-          hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-          minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
-          seconds: Math.floor((difference % (1000 * 60)) / 1000),
-        });
-      }
+      const updateTime = () => {
+        const now = new Date().getTime();
+        const difference = targetDate - now;
+
+        if (difference > 0) {
+          setTimeLeft({
+            days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+            hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+            minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+            seconds: Math.floor((difference % (1000 * 60)) / 1000),
+          });
+        }
+      };
+
+      updateTime();
+      timer = setInterval(updateTime, 1000);
+    }
+
+    return () => {
+      if (timer) clearInterval(timer);
     };
-
-    updateTime();
-    const timer = setInterval(updateTime, 1000); // Update every second
-
-    return () => clearInterval(timer);
-  }, []);
+  }, [data]);
 
   const fetchData = async () => {
     try {
       const res = await apiClient.get('/exhibitor-auth/dashboard');
       if (res.data.success) {
         setData(res.data.data);
+      }
+      const socialRes = await apiClient.get('/social-media').catch(() => null);
+      if (socialRes?.data?.data) {
+        setSocialMedia(socialRes.data.data);
       }
     } catch (err) {
       console.log('Error fetching profile', err);
@@ -203,14 +213,22 @@ export default function MoreMenuScreen() {
         {/* Event Info & Countdown Strip */}
         <View className="mx-5 mb-2 mt-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           {/* Top Row: Date & Location */}
-          <View className="bg-blue-50/80 border-b border-blue-100/50 px-4 py-3 flex-row items-center justify-between">
-            <View className="flex-row items-center">
+          <View className="bg-blue-50/80 border-b border-blue-100/50 px-4 py-3 flex-col">
+            <View className="flex-row items-center mb-2">
               {/* @ts-ignore */}
               <Calendar size={14} color="#1e3a8a" className="mr-2" />
-              <Text className="text-[#1e3a8a] font-bold text-[11px] tracking-widest uppercase">21-23 Aug 2026</Text>
+              <Text className="text-[#1e3a8a] font-bold text-[11px] tracking-widest uppercase">
+                {data?.eventId?.startDate ? (
+                  data?.eventId?.endDate ? 
+                    `${new Date(data.eventId.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - ${new Date(data.eventId.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                    : new Date(data.eventId.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                ) : 'Upcoming Event'}
+              </Text>
             </View>
-            <View className="bg-white px-2 py-1 rounded-md shadow-sm border border-slate-100">
-              <Text className="text-slate-600 font-bold text-[9px] uppercase tracking-widest">New Delhi</Text>
+            <View className="bg-white px-3 py-1.5 rounded-md shadow-sm border border-slate-100 self-start w-full">
+              <Text className="text-slate-600 font-bold text-[10px] uppercase tracking-widest leading-relaxed">
+                {data?.eventId?.location || 'New Delhi'}
+              </Text>
             </View>
           </View>
 
@@ -451,40 +469,50 @@ export default function MoreMenuScreen() {
 
             {/* Social Icons */}
             <View className="flex-row justify-between items-center mb-8 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-              <TouchableOpacity className="items-center" onPress={() => Linking.openURL('https://www.facebook.com/namogangewellness.event')}>
-                <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center mb-1">
-                  <FacebookIcon color="#1877F2" size={20} />
-                </View>
-                <Text className="text-[9px] font-bold text-slate-500 uppercase">Facebook</Text>
-              </TouchableOpacity>
+              {socialMedia?.facebook && (
+                <TouchableOpacity className="items-center" onPress={() => Linking.openURL(socialMedia.facebook)}>
+                  <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center mb-1">
+                    <FacebookIcon color="#1877F2" size={20} />
+                  </View>
+                  <Text className="text-[9px] font-bold text-slate-500 uppercase">Facebook</Text>
+                </TouchableOpacity>
+              )}
 
-              <TouchableOpacity className="items-center" onPress={() => Linking.openURL('https://www.instagram.com/namogangewellness.event')}>
-                <View className="w-10 h-10 rounded-full bg-pink-100 items-center justify-center mb-1">
-                  <InstagramIcon color="#E4405F" size={20} />
-                </View>
-                <Text className="text-[9px] font-bold text-slate-500 uppercase">Instagram</Text>
-              </TouchableOpacity>
+              {socialMedia?.instagram && (
+                <TouchableOpacity className="items-center" onPress={() => Linking.openURL(socialMedia.instagram)}>
+                  <View className="w-10 h-10 rounded-full bg-pink-100 items-center justify-center mb-1">
+                    <InstagramIcon color="#E4405F" size={20} />
+                  </View>
+                  <Text className="text-[9px] font-bold text-slate-500 uppercase">Instagram</Text>
+                </TouchableOpacity>
+              )}
 
-              <TouchableOpacity className="items-center" onPress={() => Linking.openURL('https://www.linkedin.com/company/namo-gange-wellness-event')}>
-                <View className="w-10 h-10 rounded-full bg-blue-50 items-center justify-center mb-1">
-                  <LinkedinIcon color="#0A66C2" size={20} />
-                </View>
-                <Text className="text-[9px] font-bold text-slate-500 uppercase">LinkedIn</Text>
-              </TouchableOpacity>
+              {socialMedia?.linkedin && (
+                <TouchableOpacity className="items-center" onPress={() => Linking.openURL(socialMedia.linkedin)}>
+                  <View className="w-10 h-10 rounded-full bg-blue-50 items-center justify-center mb-1">
+                    <LinkedinIcon color="#0A66C2" size={20} />
+                  </View>
+                  <Text className="text-[9px] font-bold text-slate-500 uppercase">LinkedIn</Text>
+                </TouchableOpacity>
+              )}
 
-              <TouchableOpacity className="items-center" onPress={() => Linking.openURL('https://x.com/namogange_event')}>
-                <View className="w-10 h-10 rounded-full bg-slate-200 items-center justify-center mb-1">
-                  <TwitterIcon color="#0f1419" size={20} />
-                </View>
-                <Text className="text-[9px] font-bold text-slate-500 uppercase">X</Text>
-              </TouchableOpacity>
+              {socialMedia?.twitter && (
+                <TouchableOpacity className="items-center" onPress={() => Linking.openURL(socialMedia.twitter)}>
+                  <View className="w-10 h-10 rounded-full bg-slate-200 items-center justify-center mb-1">
+                    <TwitterIcon color="#0f1419" size={20} />
+                  </View>
+                  <Text className="text-[9px] font-bold text-slate-500 uppercase">X</Text>
+                </TouchableOpacity>
+              )}
 
-              <TouchableOpacity className="items-center" onPress={() => Linking.openURL('https://www.youtube.com/@Namogangewellness')}>
-                <View className="w-10 h-10 rounded-full bg-red-100 items-center justify-center mb-1">
-                  <YoutubeIcon color="#FF0000" size={20} />
-                </View>
-                <Text className="text-[9px] font-bold text-slate-500 uppercase">YouTube</Text>
-              </TouchableOpacity>
+              {socialMedia?.youtube && (
+                <TouchableOpacity className="items-center" onPress={() => Linking.openURL(socialMedia.youtube)}>
+                  <View className="w-10 h-10 rounded-full bg-red-100 items-center justify-center mb-1">
+                    <YoutubeIcon color="#FF0000" size={20} />
+                  </View>
+                  <Text className="text-[9px] font-bold text-slate-500 uppercase">YouTube</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             <View className="h-[1px] bg-slate-200 mb-6" />
