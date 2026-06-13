@@ -4,12 +4,16 @@ import { ChevronLeft, CreditCard, CheckCircle2, AlertCircle, ShieldCheck, Calend
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { apiClient } from '@/core/api/axios';
+import { RazorpayWebView } from '@/components/dashboard/RazorpayWebView';
 
 export default function MakePaymentScreen() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<any>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [showRazorpay, setShowRazorpay] = useState(false);
+    const [rzpOrder, setRzpOrder] = useState<any>(null);
+    const [payAmount, setPayAmount] = useState(0);
 
     useEffect(() => {
         fetchData();
@@ -45,17 +49,60 @@ export default function MakePaymentScreen() {
                 { text: "Cancel", style: "cancel" },
                 { 
                     text: "Proceed to Pay", 
-                    onPress: () => {
-                        setIsProcessing(true);
-                        setTimeout(() => {
-                            setIsProcessing(false);
-                            Alert.alert("Payment Successful", "Your transaction has been completed successfully. A receipt has been sent to your email.");
-                            fetchData(); // Refresh data
-                        }, 2000);
-                    }
+                    onPress: () => createPaymentOrder(item)
                 }
             ]
         );
+    };
+
+    const createPaymentOrder = async (item: any) => {
+        try {
+            setIsProcessing(true);
+            const amount = Number(item.rawAmount || 0);
+            const res = await apiClient.post(`/payment/create-order/${data._id}`, { amount });
+            if (!res.data.success) {
+                Alert.alert('Payment Error', res.data.message || 'Could not create payment order');
+                return;
+            }
+            setRzpOrder(res.data.order);
+            setPayAmount(res.data.amount || amount);
+            setShowRazorpay(true);
+        } catch (error: any) {
+            Alert.alert('Payment Error', error.response?.data?.message || 'Could not create payment order');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const onPaymentSuccess = async (response: any) => {
+        try {
+            setShowRazorpay(false);
+            setIsProcessing(true);
+            const res = await apiClient.post('/payment/verify-payment', {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                registrationId: data._id,
+                amountPaid: payAmount,
+                paymentType: 'balance'
+            });
+            if (res.data.success) {
+                Alert.alert("Payment Successful", "Your transaction has been completed successfully.");
+                fetchData();
+            } else {
+                Alert.alert('Verification Failed', res.data.message || 'Please contact support.');
+            }
+        } catch (error: any) {
+            Alert.alert('Verification Failed', error.response?.data?.message || 'Please contact support.');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const onPaymentFailed = (error: any) => {
+        setShowRazorpay(false);
+        setIsProcessing(false);
+        Alert.alert('Payment Failed', error?.description || 'The payment was not completed.');
     };
 
     if (loading) {
@@ -74,10 +121,11 @@ export default function MakePaymentScreen() {
 
     const pendingDues = [];
     if (balance > 0) {
-        pendingDues.push({
+            pendingDues.push({
             id: `INV-${data?.registrationId || 'DUE'}`,
             title: "Stall Booking Balance",
             amount: `${cur} ${balance.toLocaleString('en-IN')}`,
+            rawAmount: balance,
             dueDate: "Immediate",
             status: isOverdue ? 'overdue' : 'upcoming',
             description: "Remaining balance for your exhibition stall."
@@ -88,6 +136,18 @@ export default function MakePaymentScreen() {
 
     return (
         <View className="flex-1 bg-slate-50">
+            <RazorpayWebView
+                visible={showRazorpay}
+                orderId={rzpOrder?.id || ''}
+                amount={payAmount}
+                currency={data?.participation?.currency || 'INR'}
+                name={data?.exhibitorName}
+                email={data?.contact1?.email}
+                contact={data?.contact1?.mobile}
+                onClose={() => setShowRazorpay(false)}
+                onSuccess={onPaymentSuccess}
+                onFailed={onPaymentFailed}
+            />
             {/* Header */}
             <View className="bg-white pt-12 pb-4 px-4 shadow-sm z-10 border-b border-slate-100">
                 <View className="flex-row items-center">

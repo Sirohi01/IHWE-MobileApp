@@ -1,8 +1,8 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import { API_URL } from '@/core/config/env';
 
-// export const API_URL = 'https://api.ihwe.in/api';
-export const API_URL = 'https://nenita-untoured-nonhesitantly.ngrok-free.dev/api';
+export { API_URL };
 
 export const apiClient = axios.create({
   baseURL: API_URL,

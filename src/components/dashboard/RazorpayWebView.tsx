@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { View, Modal, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { X } from 'lucide-react-native';
+import { RAZORPAY_KEY_ID } from '@/core/config/env';
 
 interface RazorpayWebViewProps {
   visible: boolean;
@@ -15,8 +16,6 @@ interface RazorpayWebViewProps {
   onSuccess: (data: any) => void;
   onFailed: (error: any) => void;
 }
-
-const RAZORPAY_KEY_ID = 'rzp_test_RTd9y3ngRanKxq';
 
 export function RazorpayWebView({
   visible,

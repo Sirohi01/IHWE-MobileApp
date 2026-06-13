@@ -6,6 +6,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Print from 'expo-print';
 import { Printer, ChevronLeft } from 'lucide-react-native';
 import { apiClient } from '../../../core/api/axios';
+import { imageUrl } from '../../../core/config/env';
 import { generateInvoiceHtml } from '../../../utils/htmlTemplates';
 import { headerBase64 } from '../../../utils/headerBase64';
 
@@ -40,16 +41,13 @@ export default function DocumentViewerScreen() {
         setBankDetails(banks.find((b: any) => b.status === 'active') || banks[0]);
       }
       if (setts?.authorizedSignature) {
-        const sigUrl = setts.authorizedSignature.startsWith('http') ? setts.authorizedSignature : `https://nenita-untoured-nonhesitantly.ngrok-free.dev${setts.authorizedSignature}`;
-        // const sigUrl = setts.authorizedSignature.startsWith('http') ? setts.authorizedSignature : `https://api.ihwe.in${setts.authorizedSignature}`;
-
+        const sigUrl = imageUrl(setts.authorizedSignature);
         const { uri } = await FileSystem.downloadAsync(sigUrl, FileSystem.documentDirectory + 'sig.png', { headers: { 'ngrok-skip-browser-warning': 'true' } });
         const b64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
         setSigBase64(`data:image/png;base64,${b64}`);
       }
       if (setts?.companyStamp) {
-        const stampUrl = setts.companyStamp.startsWith('http') ? setts.companyStamp : `https://nenita-untoured-nonhesitantly.ngrok-free.dev${setts.companyStamp}`;
-        // const stampUrl = setts.companyStamp.startsWith('http') ? setts.companyStamp : `https://api.ihwe.in${setts.companyStamp}`;
+        const stampUrl = imageUrl(setts.companyStamp);
         const { uri } = await FileSystem.downloadAsync(stampUrl, FileSystem.documentDirectory + 'stamp.png', { headers: { 'ngrok-skip-browser-warning': 'true' } });
         const b64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
         setStampBase64(`data:image/png;base64,${b64}`);

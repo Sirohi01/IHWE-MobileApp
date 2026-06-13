@@ -13,12 +13,23 @@ export default function BecomeSellerScreen() {
     const [success, setSuccess] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
     const [packagesModalVisible, setPackagesModalVisible] = useState(false);
+    const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([]);
 
-    const packagesList = [
+    const fallbackPackagesList = [
         { name: 'Starter', meetings: '5', price: '9,999', features: ['15 Pre-scheduled Meetings', 'Verified Buyer Access', 'Meeting Scheduler Access'] },
         { name: 'Growth', meetings: '15', price: '24,999', popular: true, features: ['15 Pre-scheduled Meetings', 'Verified Buyer Access', 'Priority Meeting Scheduler', 'Meeting Analytics Report'] },
         { name: 'Pro', meetings: '30', price: '44,999', features: ['30 Pre-scheduled Meetings', 'Verified Buyer Access', 'Priority Meeting Scheduler', 'Meeting Analytics Report', 'Featured in Buyer List'] }
     ];
+
+    const packagesList = subscriptionPlans.length > 0
+        ? subscriptionPlans.map((plan: any) => ({
+            name: plan.name,
+            meetings: String(plan.maxLeads || plan.maxServiceRequests || ''),
+            price: Number(plan.price || 0).toLocaleString('en-IN'),
+            popular: plan.name?.toLowerCase().includes('growth') || plan.displayOrder === 2,
+            features: (plan.features || []).map((feature: any) => feature.label || feature.key || feature).filter(Boolean),
+        }))
+        : fallbackPackagesList;
 
     // Select Modal State
     const [selectModalVisible, setSelectModalVisible] = useState(false);
@@ -116,6 +127,11 @@ export default function BecomeSellerScreen() {
                     representativePhotoUrl: fetchedData.representativePhotoUrl || '',
                     selectedPlan: 'Growth',
                 });
+            }
+
+            const plansRes = await apiClient.get('/seller-subscription-plans/active').catch(() => null);
+            if (plansRes?.data?.success) {
+                setSubscriptionPlans(plansRes.data.data || []);
             }
         } catch (err) {
             console.log('Error fetching dashboard', err);
@@ -456,7 +472,7 @@ export default function BecomeSellerScreen() {
                                             </View>
 
                                             <View className="border-t border-slate-200/50 pt-3 space-y-1.5">
-                                                {plan.features.map((feat, fidx) => (
+                                                {plan.features.map((feat: string, fidx: number) => (
                                                     <View key={fidx} className="flex-row items-center">
                                                         <Check size={12} color="#108c2d" className="mr-2" strokeWidth={3} />
                                                         <Text className="text-[10.5px] text-slate-600 font-semibold">{feat}</Text>
@@ -577,7 +593,7 @@ export default function BecomeSellerScreen() {
                                     </View>
 
                                     <View className="border-t border-slate-100 pt-4 space-y-2">
-                                        {plan.features.map((feat, fidx) => (
+                                        {plan.features.map((feat: string, fidx: number) => (
                                             <View key={fidx} className="flex-row items-center">
                                                 <Check size={14} color="#108c2d" className="mr-2" strokeWidth={3} />
                                                 <Text className="text-[11px] text-slate-600 font-bold">{feat}</Text>

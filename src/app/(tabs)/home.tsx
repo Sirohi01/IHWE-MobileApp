@@ -7,6 +7,7 @@ import { router } from 'expo-router';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { QuickAccessCard } from '@/components/dashboard/QuickAccessCard';
 import { SectionHeader } from '@/components/dashboard/SectionHeader';
+import { imageUrl } from '@/core/config/env';
 
 export default function HomeTab() {
   const [data, setData] = useState<any>(null);
@@ -89,14 +90,6 @@ export default function HomeTab() {
   const balance = data.balanceAmount || 0;
   const paidPct = total > 0 ? Math.round((paid / total) * 100) : 0;
 
-  const getImageUrl = (image: string) => {
-    if (!image) return "";
-    if (image.startsWith("http") || image.startsWith("data:")) return image;
-    const cleanPath = image.startsWith("/") ? image : "/" + image;
-    // return `https://api.ihwe.in${cleanPath}`;
-    return `https://nenita-untoured-nonhesitantly.ngrok-free.dev${cleanPath}`;
-  };
-
   return (
     <View className="flex-1 bg-[#f4f7f9] pt-12">
       <ScrollView className="flex-1" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
@@ -157,7 +150,7 @@ export default function HomeTab() {
         {heroSlides.length > 0 && heroSlides[currentSlide] ? (
           <View className="w-full rounded-xl overflow-hidden mb-1 shadow-sm border border-slate-200 aspect-[16/6] bg-slate-200">
             <Image
-              source={{ uri: getImageUrl(heroSlides[currentSlide].image) }}
+              source={{ uri: imageUrl(heroSlides[currentSlide].image) }}
               className="w-full h-full"
               resizeMode="cover"
             />
@@ -401,7 +394,7 @@ export default function HomeTab() {
                 <Text className="text-white font-black text-[18px] leading-tight mb-1 tracking-tight">9th IHWE India Health Seminar</Text>
                 <View className="flex-row items-center gap-1.5 mt-1">
                   <MapPin size={12} color="#cbd5e1" />
-                  <Text className="text-slate-300 text-[11px] font-medium">India Expo Centre, Greater Noida</Text>
+                  <Text className="text-slate-300 text-[11px] font-medium">Hall Nos. 8, 9 & 10, Pragati Maidan, New Delhi – 110001, Bharat</Text>
                 </View>
               </View>
             </ImageBackground>

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Alert, 
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Flashlight, FlashlightOff, X, User, Building, Phone, Mail, CheckCircle2 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { apiClient } from '@/core/api/axios';
 
 const { width } = Dimensions.get('window');
 const SCANNER_SIZE = width * 0.7;
@@ -12,6 +13,7 @@ export default function ScannerScreen() {
   const [scanned, setScanned] = useState(false);
   const [flashMode, setFlashMode] = useState(false);
   const [scannedData, setScannedData] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
 
   // Animation for the scanning line
   const scanLineAnim = useRef(new Animated.Value(0)).current;
@@ -64,35 +66,34 @@ export default function ScannerScreen() {
     );
   }
 
-  const handleBarcodeScanned = ({ type, data }: any) => {
+  const handleBarcodeScanned = async ({ data }: any) => {
     if (scanned) return;
     
     setScanned(true);
     Vibration.vibrate(100); // Haptic feedback on scan
     
-    // Simulate parsing QR code data (In a real app, this might be a JSON or a URL/ID to fetch)
     try {
-      // Mocked parsed data for the UI
-      const mockLead = {
-        name: "Rahul Sharma",
-        company: "TechCorp Solutions",
-        designation: "Procurement Head",
-        phone: "+91 98765 43210",
-        email: "rahul.s@techcorp.in",
-        raw: data
-      };
-      setScannedData(mockLead);
+      const res = await apiClient.post('/exhibitor-leads/resolve-scan', { raw: data });
+      setScannedData(res.data.data);
     } catch (e) {
-      Alert.alert("Invalid QR", "The scanned QR code is not a valid visitor badge.");
+      Alert.alert("Invalid QR", "The scanned QR code could not be resolved.");
       setScanned(false);
     }
   };
 
-  const handleSaveLead = () => {
-    // API call to save lead goes here
-    Alert.alert("Lead Saved!", "Visitor details have been added to your Buyers Management list.");
-    setScannedData(null);
-    setScanned(false);
+  const handleSaveLead = async () => {
+    if (!scannedData) return;
+    setSaving(true);
+    try {
+      await apiClient.post('/exhibitor-leads', scannedData);
+      Alert.alert("Lead Saved!", "Visitor/buyer details have been added to your captured leads.");
+      setScannedData(null);
+      setScanned(false);
+    } catch (error: any) {
+      Alert.alert("Save Failed", error.response?.data?.message || "Could not save this lead.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancelScan = () => {
@@ -175,7 +176,7 @@ export default function ScannerScreen() {
                 </View>
                 <Text className="text-green-600 font-bold text-[11px] uppercase tracking-widest">Successfully Scanned</Text>
               </View>
-              <Text className="text-2xl font-black text-slate-800 tracking-tight">{scannedData.name}</Text>
+              <Text className="text-2xl font-black text-slate-800 tracking-tight">{scannedData.name || scannedData.company || 'Scanned Lead'}</Text>
               <Text className="text-[#1a3a7c] font-bold text-[15px]">{scannedData.designation}</Text>
             </View>
             <TouchableOpacity 
@@ -191,18 +192,18 @@ export default function ScannerScreen() {
             <View className="flex-row items-center mb-4">
               {/* @ts-ignore */}
               <Building size={16} color="#64748b" className="mr-3" />
-              <Text className="text-slate-700 font-medium">{scannedData.company}</Text>
+              <Text className="text-slate-700 font-medium">{scannedData.company || scannedData.registrationId || 'Company not available'}</Text>
             </View>
             <View className="h-[1px] bg-slate-200 w-full mb-4" />
             <View className="flex-row items-center mb-4">
               {/* @ts-ignore */}
               <Phone size={16} color="#64748b" className="mr-3" />
-              <Text className="text-slate-700 font-medium">{scannedData.phone}</Text>
+              <Text className="text-slate-700 font-medium">{scannedData.phone || 'Phone not available'}</Text>
             </View>
             <View className="flex-row items-center">
               {/* @ts-ignore */}
               <Mail size={16} color="#64748b" className="mr-3" />
-              <Text className="text-slate-700 font-medium">{scannedData.email}</Text>
+              <Text className="text-slate-700 font-medium">{scannedData.email || 'Email not available'}</Text>
             </View>
           </View>
 
@@ -215,9 +216,10 @@ export default function ScannerScreen() {
             </TouchableOpacity>
             <TouchableOpacity 
               onPress={handleSaveLead}
+              disabled={saving}
               className="flex-[2] py-4 rounded-xl items-center bg-[#1a3a7c] shadow-lg shadow-blue-900/20"
             >
-              <Text className="text-white font-bold text-[14px]">Save Lead</Text>
+              <Text className="text-white font-bold text-[14px]">{saving ? 'Saving...' : 'Save Lead'}</Text>
             </TouchableOpacity>
           </View>
         </View>

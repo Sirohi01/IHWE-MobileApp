@@ -6,11 +6,9 @@ import type { Socket } from 'socket.io-client';
 // @ts-ignore
 import { io } from 'socket.io-client';
 import * as SecureStore from 'expo-secure-store';
-import { apiClient, API_URL } from '@/core/api/axios';
+import { apiClient } from '@/core/api/axios';
 import { router } from 'expo-router';
-
-// const SERVER_URL = 'https://api.ihwe.in';
-const SERVER_URL = 'https://nenita-untoured-nonhesitantly.ngrok-free.dev';
+import { SERVER_URL } from '@/core/config/env';
 
 
 export default function ChatScreen() {
@@ -167,16 +165,7 @@ export default function ChatScreen() {
     );
   }
 
-  // Display mock messages if empty for presentation purposes
-  const displayMessages = messages.length > 0 ? messages : [
-    {
-      _id: 'm-fallback-1',
-      senderType: 'admin',
-      message: 'Hello! 👋 Welcome to IHWE Support. How can I help you today?',
-      createdAt: new Date().toISOString(),
-      readByAdmin: true,
-    }
-  ];
+  const displayMessages = messages;
 
   const friendlyDate = (d: string | Date) => {
     const date = new Date(d);
@@ -201,14 +190,7 @@ export default function ChatScreen() {
     date: friendlyDate(msg.createdAt),
   }));
 
-  const hardcodedHistory = [
-    { id: "h-email-1", type: "Email", time: "04:21 PM", title: "Email", desc: "Support Team: Re: Stall setup guidelines (Attachment)", date: "19 May 2026" },
-    { id: "h-email-2", type: "Email", time: "04:18 PM", title: "Email", desc: "You: Requested information about stall setup guidelines.", date: "19 May 2026" },
-    { id: "h-call-1", type: "Call", time: "03:15 PM", title: "Call", desc: "Outgoing Call • Duration: 04:32 min", date: "18 May 2026", callType: "outgoing" },
-    { id: "h-call-2", type: "Call", time: "03:10 PM", title: "Call", desc: "Incoming Call • Duration: 06:15 min", date: "18 May 2026", callType: "incoming" },
-  ];
-
-  const combinedHistory = [...chatHistory, ...hardcodedHistory];
+  const combinedHistory = chatHistory;
   const filteredHistory = historyFilter === "All" ? combinedHistory : combinedHistory.filter((h) => h.type === historyFilter);
 
   const historyGroups: { date: string; items: any[] }[] = [];
@@ -271,6 +253,14 @@ export default function ChatScreen() {
             <Text className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Today</Text>
           </View>
         </View>
+
+        {displayMessages.length === 0 && (
+          <View className="bg-white border border-slate-200 rounded-2xl p-6 items-center">
+            <MessageSquare size={28} color="#94a3b8" />
+            <Text className="text-slate-700 font-black mt-3">Start conversation</Text>
+            <Text className="text-slate-400 text-xs text-center mt-1">Send a message to your relationship manager or support team.</Text>
+          </View>
+        )}
 
         {displayMessages.map((msg, i) => {
           const isMe = msg.senderType === 'exhibitor';

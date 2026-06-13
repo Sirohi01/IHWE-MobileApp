@@ -80,8 +80,8 @@ export default function MyEventTab() {
           </View>
 
           <View className="px-6 mt-12 z-10 items-center">
-            <Text className="text-white text-[32px] font-black leading-tight tracking-tight text-center" style={{ textShadowColor: 'rgba(0,0,0,0.7)', textShadowOffset: {width: 0, height: 2}, textShadowRadius: 4 }}>9th IHWE India</Text>
-            <Text className="text-[#a3e635] text-[18px] font-bold text-center mt-1" style={{ textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: {width: 0, height: 1}, textShadowRadius: 3 }}>2026 Edition</Text>
+            <Text className="text-white text-[32px] font-black leading-tight tracking-tight text-center" style={{ textShadowColor: 'rgba(0,0,0,0.7)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4 }}>9th IHWE India</Text>
+            <Text className="text-[#a3e635] text-[18px] font-bold text-center mt-1" style={{ textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 }}>2026 Edition</Text>
           </View>
         </ImageBackground>
 
@@ -93,7 +93,7 @@ export default function MyEventTab() {
           {/* Tab Switcher */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-1 mt-1">
             {['Overview', 'My Pass', 'Tasks', 'Services', 'Docs'].map(tab => (
-              <TouchableOpacity 
+              <TouchableOpacity
                 key={tab}
                 onPress={() => setActiveTab(tab)}
                 className={`mr-1.5 px-4 py-1.5 rounded-full border ${activeTab === tab ? 'bg-[#1a3a7c] border-[#1a3a7c]' : 'bg-white border-slate-200'}`}
@@ -167,23 +167,23 @@ export default function MyEventTab() {
                   <InfoCard title="Stall Number" value={stallNumber} subtitle="Hall 04" icon={<Store size={18} color="#1d4ed8" />} />
                   <InfoCard title="Team Members" value={String(data?.teamMembers?.length || 0)} subtitle="Registered" icon={<User size={18} color="#1d4ed8" />} />
                 </View>
-                
+
                 {/* Unified Dates Card */}
                 <View className="bg-white rounded-[20px] p-4 shadow-sm border border-slate-100 mb-2 flex-row justify-between items-center">
                   <View className="items-center flex-1 border-r border-slate-100">
-                      <Text className="text-slate-400 font-bold uppercase text-[9px] tracking-widest mb-1">Setup</Text>
-                      <Text className="text-[#0f172a] font-black text-[15px]">19–20</Text>
-                      <Text className="text-slate-500 font-bold text-[10px]">Aug</Text>
+                    <Text className="text-slate-400 font-bold uppercase text-[9px] tracking-widest mb-1">Setup</Text>
+                    <Text className="text-[#0f172a] font-black text-[15px]">19–20</Text>
+                    <Text className="text-slate-500 font-bold text-[10px]">Aug</Text>
                   </View>
                   <View className="items-center flex-1 border-r border-slate-100">
-                      <Text className="text-blue-600 font-bold uppercase text-[9px] tracking-widest mb-1">Event</Text>
-                      <Text className="text-blue-700 font-black text-[17px]">21–23</Text>
-                      <Text className="text-blue-500 font-bold text-[10px]">Aug</Text>
+                    <Text className="text-blue-600 font-bold uppercase text-[9px] tracking-widest mb-1">Event</Text>
+                    <Text className="text-blue-700 font-black text-[17px]">21–23</Text>
+                    <Text className="text-blue-500 font-bold text-[10px]">Aug</Text>
                   </View>
                   <View className="items-center flex-1">
-                      <Text className="text-slate-400 font-bold uppercase text-[9px] tracking-widest mb-1">Dismantle</Text>
-                      <Text className="text-[#0f172a] font-black text-[15px]">23</Text>
-                      <Text className="text-slate-500 font-bold text-[10px]">Aug</Text>
+                    <Text className="text-slate-400 font-bold uppercase text-[9px] tracking-widest mb-1">Dismantle</Text>
+                    <Text className="text-[#0f172a] font-black text-[15px]">23</Text>
+                    <Text className="text-slate-500 font-bold text-[10px]">Aug</Text>
                   </View>
                 </View>
               </View>
@@ -198,7 +198,7 @@ export default function MyEventTab() {
               {/* Venue Map Redirect */}
               <SectionHeader title="Venue Location" actionText="" />
               <TouchableOpacity
-                onPress={() => Linking.openURL('https://maps.google.com/?q=IICC+Dwarka,+New+Delhi')}
+                onPress={() => Linking.openURL('https://www.google.com/maps/place/Pragati+Maidan,+New+Delhi,+Delhi/@28.6159271,77.2357398,15z/data=!3m1!4b1!4m6!3m5!1s0x390ce328b5a553f7:0x795cf6ea0f8b5378!8m2!3d28.6126456!4d77.2433578!16s%2Fg%2F12hkrr6rb?entry=ttu&g_ep=EgoyMDI2MDYxMC4wIKXMDSoASAFQAw%3D%3D')}
                 className="bg-white rounded-[24px] shadow-sm border border-slate-200 overflow-hidden relative mb-2 mx-1"
               >
                 <Image

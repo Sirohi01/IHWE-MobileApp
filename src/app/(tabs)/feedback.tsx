@@ -78,6 +78,11 @@ export default function FeedbackScreen() {
                     emailId: fetchedData.contact1?.email || '',
                     productCategory: fetchedData.primaryCategory || fetchedData.industrySector || '',
                 }));
+
+                const feedbackRes = await apiClient.get('/exhibitor-feedback/my').catch(() => null);
+                if (feedbackRes?.data?.data) {
+                    setSuccess(true);
+                }
             }
         } catch (err) {
             console.log('Error fetching dashboard', err);
@@ -116,11 +121,14 @@ export default function FeedbackScreen() {
         }
 
         setSubmitting(true);
-        // Simulate API delay
-        setTimeout(() => {
-            setSubmitting(false);
+        try {
+            await apiClient.post('/exhibitor-feedback/submit', formData);
             setSuccess(true);
-        }, 1500);
+        } catch (error: any) {
+            Alert.alert("Error", error.response?.data?.message || "Failed to submit feedback");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const openSelect = (field: string, title: string, options: string[]) => {

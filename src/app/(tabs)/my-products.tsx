@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { ChevronLeft, Plus, Edit3, Trash2, Box, Eye, MessageSquare, Image as ImageIcon, X, CheckCircle2 } from 'lucide-react-native';
 import { apiClient } from '@/core/api/axios';
 import * as ImagePicker from 'expo-image-picker';
+import { imageUrl } from '@/core/config/env';
 
 export default function MyProductsScreen() {
     const router = useRouter();
@@ -189,11 +190,8 @@ export default function MyProductsScreen() {
     };
 
     const getImageUrl = (imagePath: string) => {
-        if (!imagePath) return "https://via.placeholder.com/150";
-        if (imagePath.startsWith("http")) return imagePath;
-        const cleanPath = imagePath.startsWith("/") ? imagePath : "/" + imagePath;
-        // Using same domain logic as home.tsx
-        return `https://api.ihwe.in${cleanPath}`;
+        if (!imagePath) return "";
+        return imageUrl(imagePath);
     };
 
     if (loading) {

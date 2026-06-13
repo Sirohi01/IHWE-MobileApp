@@ -1,11 +1,32 @@
 import React from 'react';
-import { View } from 'react-native';
-import { Tabs } from 'expo-router';
+import { ActivityIndicator, View } from 'react-native';
+import { Tabs, router } from 'expo-router';
 import { Home, Users, QrCode, MessageSquare, Menu } from 'lucide-react-native';
+import * as SecureStore from 'expo-secure-store';
 import TourOverlay from '@/components/dashboard/TourOverlay';
 // import FloatingContactButtons from '@/components/dashboard/FloatingContactButtons';
 
 export default function TabLayout() {
+  const [checkingAuth, setCheckingAuth] = React.useState(true);
+
+  React.useEffect(() => {
+    SecureStore.getItemAsync('exhibitorToken')
+      .then((token) => {
+        if (!token) {
+          router.replace('/(auth)/login');
+        }
+      })
+      .finally(() => setCheckingAuth(false));
+  }, []);
+
+  if (checkingAuth) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator size="large" color="#23471d" />
+      </View>
+    );
+  }
+
   return (
     <>
       <Tabs screenOptions={{

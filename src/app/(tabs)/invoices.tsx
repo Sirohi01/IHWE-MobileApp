@@ -41,14 +41,14 @@ export default function InvoicesScreen() {
   }
 
   const cur = data?.participation?.currency === 'USD' ? '$' : '₹';
-  const total = data?.participation?.total || 0;
-  const paid = data?.amountPaid || 0;
-  const balance = data?.balanceAmount || 0;
-
-  // As per user requirement, proforma comes from "estimate" schema, tax invoice from "invoice" schema
   const estimate = data?.estimate || data?.participation?.estimate;
   const invoice = data?.invoice || data?.participation?.invoice;
   const receipts = data?.receipts || data?.participation?.receipts || [];
+
+  const total = data?.financeBreakdown?.netPayable || data?.totalPayable || data?.participation?.total || 0;
+  const paid = data?.amountPaid || 0;
+  // Use the actual derived total to compute balance correctly if amountPaid > 0
+  const balance = Math.max(0, total - paid);
 
   const handleView = (type: 'estimate' | 'invoice', doc: any) => {
     if (!doc || !doc.id) {

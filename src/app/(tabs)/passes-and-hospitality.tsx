@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, ImageBackground } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, ImageBackground, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Users, UserCheck, Car, Wrench, ArrowRight, X, Sparkles, Building2, Ticket, CheckCircle2, ChevronRight, Hash } from 'lucide-react-native';
 import { apiClient } from '@/core/api/axios';
@@ -13,17 +13,48 @@ export default function PassesAndHospitalityScreen() {
     const [personnel, setPersonnel] = useState([{ name: '', designation: '', email: '', phone: '', gender: 'male' }]);
     const [vehicles, setVehicles] = useState([{ vehicleType: '4-wheeler', vehicleNumber: '' }]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [exhibitorId, setExhibitorId] = useState('');
+    const [requests, setRequests] = useState<any[]>([]);
+    const [passConfigs, setPassConfigs] = useState<any[]>([]);
 
-    const passes = [
+    const fetchRequests = async () => {
+        try {
+            const dash = await apiClient.get('/exhibitor-auth/dashboard');
+            const id = dash.data?.data?._id;
+            if (!id) return;
+            setExhibitorId(id);
+            const [res, configRes] = await Promise.all([
+                apiClient.get(`/exhibitor-pass-requests/exhibitor/${id}`),
+                apiClient.get('/exhibitor-pass-config/active').catch(() => null)
+            ]);
+            setRequests(res.data?.data || []);
+            setPassConfigs(configRes?.data?.data || []);
+        } catch (error) {
+            console.log('Failed to load pass requests', error);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchRequests();
+    }, []);
+
+    const fallbackPasses = [
         {
             id: "exhibitor",
             title: "Exhibitor Pass",
             subtitle: "For Your Team Members",
             icon: UserCheck,
             complimentary: 2,
+            totalQuota: 10,
             used: 0,
             remaining: 2,
             price: 150,
+            maxPerRequest: 10,
             theme: { 
                 bg: "bg-orange-50", 
                 text: "text-orange-600", 
@@ -37,9 +68,11 @@ export default function PassesAndHospitalityScreen() {
             subtitle: "For Exhibitor Vehicles",
             icon: Car,
             complimentary: 2,
+            totalQuota: 10,
             used: 0,
             remaining: 2,
             price: 500,
+            maxPerRequest: 10,
             theme: { 
                 bg: "bg-emerald-50", 
                 text: "text-emerald-600", 
@@ -53,9 +86,11 @@ export default function PassesAndHospitalityScreen() {
             subtitle: "For Staff, Workers",
             icon: Wrench,
             complimentary: 4,
+            totalQuota: 10,
             used: 0,
             remaining: 4,
             price: 150,
+            maxPerRequest: 10,
             theme: { 
                 bg: "bg-purple-50", 
                 text: "text-purple-600", 
@@ -69,9 +104,11 @@ export default function PassesAndHospitalityScreen() {
             subtitle: "For Invited Visitors",
             icon: Users,
             complimentary: 10,
+            totalQuota: 20,
             used: 2,
             remaining: 8,
             price: 200,
+            maxPerRequest: 10,
             theme: { 
                 bg: "bg-blue-50", 
                 text: "text-blue-600", 
@@ -80,6 +117,27 @@ export default function PassesAndHospitalityScreen() {
             }
         }
     ];
+
+    const themeByType: any = fallbackPasses.reduce((acc: any, pass: any) => {
+        acc[pass.id] = { icon: pass.icon, theme: pass.theme };
+        return acc;
+    }, {});
+
+    const passes = passConfigs.length > 0
+        ? passConfigs.map((config: any) => ({
+            id: config.passType,
+            title: config.title,
+            subtitle: config.subtitle,
+            icon: themeByType[config.passType]?.icon || Ticket,
+            complimentary: Number(config.complimentaryQuota || 0),
+            totalQuota: Number(config.totalQuota || 0),
+            used: 0,
+            remaining: Number(config.complimentaryQuota || 0),
+            price: Number(config.price || 0),
+            maxPerRequest: Number(config.maxPerRequest || 10),
+            theme: themeByType[config.passType]?.theme || fallbackPasses[0].theme
+        }))
+        : fallbackPasses;
 
     const handleOpenModal = (pass: any) => {
         setSelectedPass(pass);
@@ -90,7 +148,8 @@ export default function PassesAndHospitalityScreen() {
     };
 
     const handleQuantityChange = (newQty: number) => {
-        if (newQty < 1 || newQty > 10) return;
+        const maxAllowed = selectedPass?.maxPerRequest || selectedPass?.totalQuota || 10;
+        if (newQty < 1 || newQty > maxAllowed) return;
         setQuantity(newQty);
         
         if (selectedPass?.id === 'vehicle') {
@@ -141,12 +200,30 @@ export default function PassesAndHospitalityScreen() {
             const response = await apiClient.post('/exhibitor-auth/pass-request', payload);
             Alert.alert("Success", response.data.message || "Pass request submitted successfully.");
             setIsModalOpen(false);
+            fetchRequests();
         } catch (error: any) {
             Alert.alert("Error", error.response?.data?.message || "Failed to submit pass request.");
         } finally {
             setIsSubmitting(false);
         }
     };
+
+    const countsByType = requests.reduce((acc: any, req) => {
+        const key = req.passType;
+        acc[key] = acc[key] || { pending: 0, approved: 0, rejected: 0, total: 0 };
+        acc[key][req.status] = (acc[key][req.status] || 0) + Number(req.quantity || 0);
+        acc[key].total += Number(req.quantity || 0);
+        return acc;
+    }, {});
+
+    if (loading) {
+        return (
+            <View className="flex-1 bg-[#f4f7f9] items-center justify-center">
+                <ActivityIndicator size="large" color="#1a3a7c" />
+                <Text className="text-[#1a3a7c] font-bold text-[12px] mt-4 tracking-widest uppercase">Loading Passes...</Text>
+            </View>
+        );
+    }
 
     return (
         <View className="flex-1 bg-[#f4f7f9]">
@@ -160,7 +237,12 @@ export default function PassesAndHospitalityScreen() {
                 <Text className="text-slate-800 font-black text-[24px] tracking-tight mb-1">Passes & Hospitality</Text>
             </View>
 
-            <ScrollView className="flex-1" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, paddingTop: 10 }} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                className="flex-1"
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchRequests(); }} />}
+                contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, paddingTop: 10 }}
+                showsVerticalScrollIndicator={false}
+            >
                 
                 {/* Complimentary Quota Grid */}
                 <View className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 mb-4">
@@ -183,7 +265,9 @@ export default function PassesAndHospitalityScreen() {
                                 <pass.icon size={22} className={pass.theme.text} />
                                 <View className="mt-3 flex-row items-baseline gap-1">
                                     <Text className={`text-2xl font-black ${pass.theme.text}`}>{pass.complimentary}</Text>
-                                    <Text className="text-slate-400 font-bold text-[10px] uppercase">Free</Text>
+                                    <Text className="text-slate-400 font-bold text-[10px] uppercase">
+                                        {(countsByType[pass.id]?.approved || 0) > 0 ? `${countsByType[pass.id].approved} Approved` : 'Free'}
+                                    </Text>
                                 </View>
                                 <Text className="text-[11px] font-bold text-slate-600 mt-1">{pass.title}</Text>
                             </View>
@@ -224,12 +308,17 @@ export default function PassesAndHospitalityScreen() {
                         <View className="flex-row bg-white/60 rounded-2xl p-1 mb-3">
                             <View className="flex-1 items-center py-2">
                                 <Text className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Used</Text>
-                                <Text className="text-lg font-black text-slate-800">{pass.used}</Text>
+                                <Text className="text-lg font-black text-slate-800">{countsByType[pass.id]?.approved || pass.used}</Text>
                             </View>
                             <View className="w-[1px] bg-slate-200/50 my-2" />
                             <View className="flex-1 items-center py-2">
                                 <Text className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Remaining</Text>
-                                <Text className="text-lg font-black text-slate-800">{pass.remaining}</Text>
+                                <Text className="text-lg font-black text-slate-800">{Math.max(0, pass.complimentary - (countsByType[pass.id]?.approved || pass.used))}</Text>
+                            </View>
+                            <View className="w-[1px] bg-slate-200/50 my-2" />
+                            <View className="flex-1 items-center py-2">
+                                <Text className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total</Text>
+                                <Text className="text-lg font-black text-slate-800">{pass.totalQuota || 'Open'}</Text>
                             </View>
                         </View>
 
@@ -237,7 +326,9 @@ export default function PassesAndHospitalityScreen() {
                             onPress={() => handleOpenModal(pass)}
                             className={`w-full py-3 rounded-2xl flex-row items-center justify-center shadow-sm ${pass.theme.btn}`}
                         >
-                            <Text className={`font-black text-[13px] uppercase tracking-widest mr-2 ${pass.theme.text}`}>Request Passes</Text>
+                            <Text className={`font-black text-[13px] uppercase tracking-widest mr-2 ${pass.theme.text}`}>
+                                {(countsByType[pass.id]?.pending || 0) > 0 ? `${countsByType[pass.id].pending} Pending` : 'Request Passes'}
+                            </Text>
                             <ArrowRight size={16} className={pass.theme.text} />
                         </TouchableOpacity>
                     </View>
@@ -293,6 +384,9 @@ export default function PassesAndHospitalityScreen() {
                                     <Text className="text-[13px] font-bold text-slate-500">Estimated Total</Text>
                                     <Text className="text-[18px] font-black text-slate-800">₹{selectedPass?.price * quantity}</Text>
                                 </View>
+                                <Text className="text-[10px] text-slate-400 font-bold mt-2">
+                                    Max {selectedPass?.maxPerRequest || selectedPass?.totalQuota || 10} passes per request
+                                </Text>
                             </View>
 
                             {/* Dynamic Fields */}
