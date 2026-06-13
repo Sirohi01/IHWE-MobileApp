@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Alert, Vibration } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { Flashlight, FlashlightOff, X, User, Building, Phone, Mail, CheckCircle2 } from 'lucide-react-native';
+import { Camera, Flashlight, FlashlightOff, X, Building, Phone, Mail, CheckCircle2 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiClient } from '@/core/api/axios';
 
@@ -49,7 +49,7 @@ export default function ScannerScreen() {
         <View className="bg-white p-8 rounded-3xl items-center shadow-sm border border-slate-100 w-full">
           <View className="w-20 h-20 bg-blue-50 rounded-full items-center justify-center mb-6">
             {/* @ts-ignore */}
-            <CameraView size={32} color="#1a3a7c" />
+            <Camera size={32} color="#1a3a7c" />
           </View>
           <Text className="text-xl font-bold text-slate-800 mb-3 text-center">Camera Access Required</Text>
           <Text className="text-slate-500 text-center mb-8 leading-relaxed">
@@ -132,34 +132,33 @@ export default function ScannerScreen() {
           barcodeScannerSettings={{
             barcodeTypes: ["qr"],
           }}
-        >
-          {/* Overlay mask */}
-          <View style={styles.overlay}>
-            <View style={styles.topOverlay} />
-            <View style={styles.middleOverlay}>
-              <View style={styles.leftOverlay} />
-              <View style={styles.scannerFrame}>
-                {/* Scanner Frame Corners */}
-                <View style={[styles.corner, styles.topLeft]} />
-                <View style={[styles.corner, styles.topRight]} />
-                <View style={[styles.corner, styles.bottomLeft]} />
-                <View style={[styles.corner, styles.bottomRight]} />
-                
-                {/* Animated Scanning Line */}
-                {!scanned && (
-                  <Animated.View 
-                    style={[
-                      styles.scanLine,
-                      { transform: [{ translateY: scanLineAnim }] }
-                    ]} 
-                  />
-                )}
-              </View>
-              <View style={styles.rightOverlay} />
+        />
+        {/* Overlay mask */}
+        <View style={styles.overlay} pointerEvents="none">
+          <View style={styles.topOverlay} />
+          <View style={styles.middleOverlay}>
+            <View style={styles.leftOverlay} />
+            <View style={styles.scannerFrame}>
+              {/* Scanner Frame Corners */}
+              <View style={[styles.corner, styles.topLeft]} />
+              <View style={[styles.corner, styles.topRight]} />
+              <View style={[styles.corner, styles.bottomLeft]} />
+              <View style={[styles.corner, styles.bottomRight]} />
+              
+              {/* Animated Scanning Line */}
+              {!scanned && (
+                <Animated.View 
+                  style={[
+                    styles.scanLine,
+                    { transform: [{ translateY: scanLineAnim }] }
+                  ]} 
+                />
+              )}
             </View>
-            <View style={styles.bottomOverlay} />
+            <View style={styles.rightOverlay} />
           </View>
-        </CameraView>
+          <View style={styles.bottomOverlay} />
+        </View>
       </View>
 
       {/* Scanned Result Modal / Bottom Sheet */}

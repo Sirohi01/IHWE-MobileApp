@@ -4,6 +4,7 @@ import { Mail, MessageCircle, ArrowRight, ShieldCheck } from 'lucide-react-nativ
 import { useRouter } from 'expo-router';
 import { apiClient } from '../../core/api/axios';
 import { useAuthStore } from '../../core/store/useAuthStore';
+import { registerAndSavePushToken } from '../../core/hooks/usePushNotifications';
 export default function LoginScreen() {
   const router = useRouter();
   const setToken = useAuthStore((state) => state.setToken);
@@ -72,7 +73,8 @@ export default function LoginScreen() {
       const res = await apiClient.post('/exhibitor-auth/verify-otp', payload);
 
       if (res.data.success && res.data.token) {
-        await setToken(res.data.token);
+        await setToken(res.data.token, res.data.exhibitor);
+        registerAndSavePushToken();
         router.replace('/(tabs)/home');
       } else {
         Alert.alert('Invalid Code', res.data.message || 'The verification code is incorrect');

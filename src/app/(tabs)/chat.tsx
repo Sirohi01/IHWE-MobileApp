@@ -1,13 +1,13 @@
 import '../../global.css';
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform, Modal, AppState } from 'react-native';
 import { Send, Smile, Paperclip, Check, CheckCheck, MoreVertical, Phone, BadgeCheck, Loader2, Info, UserCircle2, History, Mail, PhoneIncoming, PhoneOutgoing, X, Filter, MessageSquare } from 'lucide-react-native';
 import type { Socket } from 'socket.io-client';
 // @ts-ignore
 import { io } from 'socket.io-client';
 import * as SecureStore from 'expo-secure-store';
 import { apiClient } from '@/core/api/axios';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { SERVER_URL } from '@/core/config/env';
 
 
@@ -23,6 +23,8 @@ export default function ChatScreen() {
 
   const scrollViewRef = useRef<ScrollView>(null);
   const typingTimer = useRef<any>(null);
+  const dataRef = useRef<any>(null);
+  const socketRef = useRef<Socket | null>(null);
 
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
   const [historyFilter, setHistoryFilter] = useState('All');
@@ -30,6 +32,37 @@ export default function ChatScreen() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
+  useEffect(() => {
+    socketRef.current = socket;
+  }, [socket]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const refreshCurrentRoom = () => {
+        const currentData = dataRef.current;
+        if (currentData?._id) {
+          fetchMessages(currentData._id, false);
+          socketRef.current?.emit('mark_read', { roomId: currentData._id, readerType: 'exhibitor' });
+        }
+      };
+
+      refreshCurrentRoom();
+      const interval = setInterval(refreshCurrentRoom, 5000);
+      const subscription = AppState.addEventListener('change', (nextState) => {
+        if (nextState === 'active') refreshCurrentRoom();
+      });
+
+      return () => {
+        clearInterval(interval);
+        subscription.remove();
+      };
+    }, [])
+  );
 
   const fetchData = async () => {
     try {
@@ -56,14 +89,14 @@ export default function ChatScreen() {
     }
   };
 
-  const fetchMessages = async (roomId: string) => {
+  const fetchMessages = async (roomId: string, showErrors = true) => {
     try {
       const res = await apiClient.get(`/chat/messages/${roomId}`);
       if (res.data.success) {
         setMessages(res.data.data);
       }
     } catch (err) {
-      console.log('Error fetching messages', err);
+      if (showErrors) console.log('Error fetching messages', err);
     }
   };
 
@@ -71,7 +104,11 @@ export default function ChatScreen() {
     const roomId = dashboardData._id;
     const s = io(SERVER_URL, {
       transports: ['websocket', 'polling'],
-      extraHeaders: { 'ngrok-skip-browser-warning': 'true' }
+      extraHeaders: { 'ngrok-skip-browser-warning': 'true' },
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      timeout: 20000,
     });
 
     s.on('connect', () => {
@@ -82,6 +119,22 @@ export default function ChatScreen() {
         userName: dashboardData.exhibitorName
       });
       s.emit('mark_read', { roomId, readerType: 'exhibitor' });
+      fetchMessages(roomId, false);
+    });
+
+    s.on('reconnect', () => {
+      s.emit('join_room', {
+        roomId,
+        userId: dashboardData._id,
+        userType: 'exhibitor',
+        userName: dashboardData.exhibitorName
+      });
+      s.emit('mark_read', { roomId, readerType: 'exhibitor' });
+      fetchMessages(roomId, false);
+    });
+
+    s.on('connect_error', (error: any) => {
+      console.log('Chat socket connection error', error?.message || error);
     });
 
     s.on('receive_message', (msg: any) => {

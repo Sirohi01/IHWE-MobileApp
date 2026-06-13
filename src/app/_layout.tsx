@@ -2,7 +2,7 @@ import '../global.css';
 import { Stack, router } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { AppState, Alert } from 'react-native';
 import { apiClient } from '@/core/api/axios';
 import { imageUrl } from '@/core/config/env';
@@ -14,7 +14,7 @@ export default function RootLayout() {
   const lastAlertedId = useRef<string | null>(null);
   
   // Register for push notifications
-  usePushNotifications();
+  const { notification } = usePushNotifications();
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
@@ -29,11 +29,23 @@ export default function RootLayout() {
 
     // Also check on initial mount
     checkNewReminders();
+    const interval = setInterval(() => {
+      if (appState.current === 'active') {
+        checkNewReminders();
+      }
+    }, 10000);
 
     return () => {
       subscription.remove();
+      clearInterval(interval);
     };
   }, []);
+
+  useEffect(() => {
+    if (notification) {
+      checkNewReminders();
+    }
+  }, [notification]);
 
   const checkNewReminders = async () => {
     try {
@@ -41,7 +53,8 @@ export default function RootLayout() {
       const storedData = await SecureStore.getItemAsync('exhibitorData');
       if (!token || !storedData) return;
 
-      const userId = JSON.parse(storedData).id;
+      const userId = storedData ? JSON.parse(storedData).id : getUserIdFromToken(token);
+      if (!userId) return;
 
       const res = await apiClient.get('/reminders/my-reminders', { headers: { Authorization: `Bearer ${token}` } });
       if (res.data.success) {
@@ -66,21 +79,15 @@ export default function RootLayout() {
       try {
         const fullUrl = imageUrl(reminder.audioUrl);
         
-        await Audio.setAudioModeAsync({
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: true,
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          shouldPlayInBackground: true,
+          interruptionMode: 'mixWithOthers',
         });
 
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: fullUrl },
-          { shouldPlay: true }
-        );
-        
-        sound.setOnPlaybackStatusUpdate((status: any) => {
-          if (status.isLoaded && status.didJustFinish) {
-            sound.unloadAsync();
-          }
-        });
+        const player = createAudioPlayer({ uri: fullUrl });
+        player.play();
+        setTimeout(() => player.remove(), 30000);
       } catch (error) {
         console.log('Error playing custom notification sound:', error);
       }
@@ -98,3 +105,14 @@ export default function RootLayout() {
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
+
+const getUserIdFromToken = (token: string) => {
+  try {
+    const payload = token.split('.')[1];
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const decoded = JSON.parse(atob(normalized));
+    return decoded.id;
+  } catch {
+    return null;
+  }
+};

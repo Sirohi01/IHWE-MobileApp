@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
-  setToken: (token: string) => Promise<void>;
+  setToken: (token: string, exhibitorData?: any) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -13,13 +13,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   isAuthenticated: false,
 
-  setToken: async (token: string) => {
+  setToken: async (token: string, exhibitorData?: any) => {
     await SecureStore.setItemAsync('exhibitorToken', token);
+    if (exhibitorData) {
+      await SecureStore.setItemAsync('exhibitorData', JSON.stringify(exhibitorData));
+    }
     set({ token, isAuthenticated: true });
   },
 
   logout: async () => {
     await SecureStore.deleteItemAsync('exhibitorToken');
+    await SecureStore.deleteItemAsync('exhibitorData');
     set({ token: null, isAuthenticated: false });
   },
 

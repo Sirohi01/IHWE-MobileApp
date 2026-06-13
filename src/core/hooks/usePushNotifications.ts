@@ -1,52 +1,48 @@
 import { useState, useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 import { apiClient } from '../api/axios';
 
-Notifications.setNotificationHandler({
-  handleNotification: async (): Promise<any> => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
-
 export const usePushNotifications = () => {
   const [expoPushToken, setExpoPushToken] = useState('');
-  const [notification, setNotification] = useState<Notifications.Notification>();
+  const [notification, setNotification] = useState<any>();
   const notificationListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
 
   useEffect(() => {
-    registerForPushNotificationsAsync().then(async token => {
+    let mounted = true;
+
+    registerAndSavePushToken().then(token => {
       if (token) {
+        if (!mounted) return;
         setExpoPushToken(token);
-        const authToken = await SecureStore.getItemAsync('exhibitorToken');
-        if (authToken) {
-          try {
-            await apiClient.post('/reminders/save-push-token', { pushToken: token }, {
-              headers: { Authorization: `Bearer ${authToken}` }
-            });
-            console.log('Push token saved to backend!');
-          } catch (e) {
-            console.log('Failed to save push token to backend:', e);
-          }
-        }
       }
     });
 
-    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-      setNotification(notification);
-    });
+    if (Constants.appOwnership !== 'expo') {
+      import('expo-notifications').then(Notifications => {
+        Notifications.setNotificationHandler({
+          handleNotification: async (): Promise<any> => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: false,
+          }),
+        });
 
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log(response);
-    });
+        notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+          setNotification(notification);
+        });
+
+        responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+          console.log(response);
+        });
+      });
+    }
 
     return () => {
+      mounted = false;
       if (notificationListener.current) {
         notificationListener.current.remove();
       }
@@ -59,8 +55,34 @@ export const usePushNotifications = () => {
   return { expoPushToken, notification };
 };
 
+export async function registerAndSavePushToken() {
+  const token = await registerForPushNotificationsAsync();
+  if (!token) return null;
+
+  const authToken = await SecureStore.getItemAsync('exhibitorToken');
+  if (!authToken) return token;
+
+  try {
+    await apiClient.post('/reminders/save-push-token', { pushToken: token }, {
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    console.log('Push token saved to backend!');
+  } catch (e) {
+    console.log('Failed to save push token to backend:', e);
+  }
+
+  return token;
+}
+
 async function registerForPushNotificationsAsync() {
   let token;
+
+  if (Constants.appOwnership === 'expo') {
+    console.log('Push notifications require a development build or APK. Skipping Expo Go registration.');
+    return null;
+  }
+
+  const Notifications = await import('expo-notifications');
 
   if (Platform.OS === 'android') {
     Notifications.setNotificationChannelAsync('default', {

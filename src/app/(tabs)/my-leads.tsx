@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Linking, Alert, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Users, Building, Phone, Mail, FileText, Calendar, ChevronDown, Check, X, Search, Thermometer, PenSquare } from 'lucide-react-native';
+import { ArrowLeft, Users, Building, Phone, Mail, FileText, Calendar, Check, X, Search, Thermometer, PenSquare } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { apiClient } from '@/core/api/axios';
 
@@ -11,6 +11,8 @@ export default function MyLeadsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('All');
+  const [sourceFilter, setSourceFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -36,12 +38,25 @@ export default function MyLeadsScreen() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'All') {
-      setLeads(allLeads);
-    } else {
-      setLeads(allLeads.filter(l => (l.temperature || 'Uncategorized') === activeTab));
-    }
-  }, [allLeads, activeTab]);
+    const needle = searchQuery.trim().toLowerCase();
+    const nextLeads = allLeads.filter((lead) => {
+      const tempMatches = activeTab === 'All' || (lead.temperature || 'Uncategorized') === activeTab;
+      const sourceMatches = sourceFilter === 'All' || (lead.sourceType || 'unknown') === sourceFilter.toLowerCase();
+      const text = [
+        lead.name,
+        lead.company,
+        lead.designation,
+        lead.phone,
+        lead.email,
+        lead.registrationId,
+        lead.interest,
+        lead.notes
+      ].join(' ').toLowerCase();
+      return tempMatches && sourceMatches && (!needle || text.includes(needle));
+    });
+
+    setLeads(nextLeads);
+  }, [allLeads, activeTab, sourceFilter, searchQuery]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -108,6 +123,9 @@ export default function MyLeadsScreen() {
             </Text>
             <Text className="text-sm text-slate-500 font-medium mt-0.5" numberOfLines={1}>
               {lead.designation || 'Visitor'}
+            </Text>
+            <Text className="text-[10px] text-indigo-500 font-black mt-1 uppercase tracking-wider">
+              {(lead.sourceType || 'unknown')} lead
             </Text>
           </View>
           
@@ -186,6 +204,7 @@ export default function MyLeadsScreen() {
   };
 
   const tabs = ['All', 'Hot', 'Warm', 'Cold', 'Uncategorized'];
+  const sourceTabs = ['All', 'Buyer', 'Visitor', 'Unknown'];
 
   return (
     <SafeAreaView className="flex-1 bg-[#f8fafc]">
@@ -205,8 +224,37 @@ export default function MyLeadsScreen() {
         </View>
       </View>
 
-      {/* Filter Tabs */}
+      {/* Search & Filter Tabs */}
       <View className="bg-white border-b border-slate-200">
+        <View className="px-4 pt-3">
+          <View className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 flex-row items-center">
+            <Search size={16} color="#94a3b8" />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search name, company, phone, email..."
+              placeholderTextColor="#94a3b8"
+              className="flex-1 ml-2 text-slate-800 font-semibold text-[13px]"
+              autoCapitalize="none"
+            />
+          </View>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pt-3 px-4">
+          {sourceTabs.map((tab) => (
+            <TouchableOpacity 
+              key={tab}
+              onPress={() => setSourceFilter(tab)}
+              className={`mr-3 px-4 py-2 rounded-full border ${sourceFilter === tab ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-200'}`}
+            >
+              <Text className={`font-bold text-xs ${sourceFilter === tab ? 'text-white' : 'text-slate-600'}`}>
+                {tab}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          <View className="w-8" />
+        </ScrollView>
+
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="py-3 px-4">
           {tabs.map((tab) => (
             <TouchableOpacity 
@@ -237,7 +285,7 @@ export default function MyLeadsScreen() {
           <Text className="text-center text-slate-500 font-medium leading-relaxed mb-8">
             {activeTab === 'All' 
               ? "You haven't captured any leads yet. Use the scanner to start building your network."
-              : `You don't have any ${activeTab} leads right now.`}
+              : "No leads match your current search or filters."}
           </Text>
           {activeTab === 'All' && (
             <TouchableOpacity 
