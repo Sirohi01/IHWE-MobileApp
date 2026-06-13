@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image, Tex
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { apiClient } from '@/core/api/axios';
-import { ChevronLeft, Search, ShoppingCart, LayoutGrid, Zap, Megaphone, Monitor, Wrench, Coffee, Users, Plus, Minus, Trash2, CheckCircle2, ChevronRight, FileText, Image as ImageIcon, Info, Store } from 'lucide-react-native';
+import { ChevronLeft, Search, ShoppingCart, LayoutGrid, Zap, Megaphone, Monitor, Wrench, Coffee, Users, Plus, Minus, Trash2, CheckCircle2, ChevronRight, FileText, Image as ImageIcon, Info, Store, Gift } from 'lucide-react-native';
 import { RazorpayWebView } from '@/components/dashboard/RazorpayWebView';
 
 interface CartItem {
@@ -34,6 +34,7 @@ export default function AddOnServicesScreen() {
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
+  const [showComplementary, setShowComplementary] = useState(false);
   const [paying, setPaying] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -214,6 +215,8 @@ export default function AddOnServicesScreen() {
   };
 
   const purchasableItems = catalog.filter(i => i.type === 'purchasable' && i.isActive);
+  const complementaryItems = catalog.filter(i => i.type === 'complimentary' && i.isActive);
+  
   let filteredItems = purchasableItems;
   if (activeTab !== 'All Items') {
     filteredItems = filteredItems.filter(i => i.category === activeTab);
@@ -330,7 +333,14 @@ export default function AddOnServicesScreen() {
             )}
           </TouchableOpacity>
         </View>
-        <Text className="text-blue-100 text-[12px] leading-tight z-10">Enhance your stall with premium facilities. Select items to add to your cart.</Text>
+        <View className="flex-row items-center justify-between mt-1 z-10">
+          <Text className="text-blue-100 text-[12px] leading-tight flex-1 mr-4">Enhance your stall with premium facilities. Select items to add to your cart.</Text>
+          <TouchableOpacity onPress={() => setShowComplementary(true)} className="flex-row items-center bg-white/20 px-3 py-1.5 rounded-full border border-white/30">
+            {/* @ts-ignore */}
+            <Gift size={12} color="white" className="mr-1.5" />
+            <Text className="text-white text-[10px] font-bold uppercase tracking-wider">Free Items</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Search & Filter */}
@@ -534,6 +544,70 @@ export default function AddOnServicesScreen() {
           onClose={onPaymentClosed}
         />
       )}
+
+      {/* Complementary Items Modal */}
+      <Modal visible={showComplementary} animationType="slide" transparent={true} onRequestClose={() => setShowComplementary(false)}>
+        <View className="flex-1 bg-black/50 justify-end">
+          <View className="bg-white h-[75%] rounded-t-3xl overflow-hidden shadow-2xl flex flex-col">
+            <View className="flex-row items-center justify-between p-5 border-b border-slate-100 bg-[#1a3a7c]">
+              <View className="flex-row items-center">
+                {/* @ts-ignore */}
+                <Gift size={20} color="white" className="mr-2" />
+                <Text className="text-white text-lg font-black tracking-wider">Complementary Items</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowComplementary(false)} className="w-8 h-8 bg-white/20 rounded-full items-center justify-center">
+                {/* @ts-ignore */}
+                <ChevronLeft size={20} color="white" style={{ transform: [{ rotate: '-90deg' }] }} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView className="flex-1 px-4 py-4" showsVerticalScrollIndicator={false}>
+              <Text className="text-slate-500 font-bold text-[12px] mb-4 text-center">These items are provided for free based on your stall allocation.</Text>
+              
+              {complementaryItems.length === 0 ? (
+                <View className="items-center justify-center py-10 opacity-50">
+                  {/* @ts-ignore */}
+                  <Gift size={40} color="#94a3b8" className="mb-2" />
+                  <Text className="text-slate-500 font-bold">No complementary items available.</Text>
+                </View>
+              ) : (
+                complementaryItems.map(item => {
+                  let finalImageUrl = null;
+                  if (item.imageUrl) {
+                    if (item.imageUrl.startsWith('http')) {
+                      finalImageUrl = item.imageUrl;
+                    } else {
+                      const cleanServer = SERVER_URL.endsWith('/') ? SERVER_URL.slice(0, -1) : SERVER_URL;
+                      const cleanPath = item.imageUrl.startsWith('/') ? item.imageUrl : `/${item.imageUrl}`;
+                      finalImageUrl = `${cleanServer}${cleanPath}`;
+                    }
+                    finalImageUrl = encodeURI(finalImageUrl);
+                  }
+                  
+                  return (
+                    <View key={item._id} className="flex-row items-center py-3 px-3 mb-3 bg-slate-50 border border-slate-200 rounded-xl">
+                      <View className="w-14 h-14 bg-white rounded-lg border border-slate-200 items-center justify-center p-1 mr-3">
+                        {finalImageUrl ? (
+                          <Image source={{ uri: finalImageUrl, headers: { 'ngrok-skip-browser-warning': 'true' } }} className="w-full h-full" resizeMode="contain" />
+                        ) : (
+                          // @ts-ignore
+                          <ImageIcon size={20} color="#cbd5e1" />
+                        )}
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-slate-800 font-bold text-[13px] mb-1">{item.name}</Text>
+                        <View className="bg-green-100 self-start px-2 py-0.5 rounded-full">
+                          <Text className="text-green-700 font-bold text-[9px] uppercase tracking-widest">Included Free</Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
