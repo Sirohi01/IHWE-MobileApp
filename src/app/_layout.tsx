@@ -28,7 +28,10 @@ export default function RootLayout() {
     });
 
     // Also check on initial mount
-    checkNewReminders();
+    SecureStore.getItemAsync('lastAlertedReminderId').then((id) => {
+      lastAlertedId.current = id;
+      checkNewReminders();
+    });
     const interval = setInterval(() => {
       if (appState.current === 'active') {
         checkNewReminders();
@@ -60,11 +63,12 @@ export default function RootLayout() {
       if (res.data.success) {
         const reminders = res.data.data;
         // Find latest unread
-        const unread = reminders.filter((r: any) => !r.readBy?.includes(userId));
+        const unread = reminders.filter((r: any) => !hasUserReadReminder(r, userId));
         if (unread.length > 0) {
           const latest = unread[0]; // First one is the newest (sorted by backend)
           if (latest._id !== lastAlertedId.current) {
             lastAlertedId.current = latest._id;
+            await SecureStore.setItemAsync('lastAlertedReminderId', latest._id);
             playAudioAndAlert(latest);
           }
         }
@@ -97,7 +101,13 @@ export default function RootLayout() {
       reminder.title || 'New Reminder',
       reminder.message,
       [
-        { text: 'View', onPress: () => router.push('/(tabs)/reminders') },
+        {
+          text: 'View',
+          onPress: async () => {
+            await markReminderAsRead(reminder._id);
+            router.push('/(tabs)/reminders');
+          }
+        },
         { text: 'Dismiss', style: 'cancel' }
       ]
     );
@@ -105,6 +115,25 @@ export default function RootLayout() {
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
+
+const hasUserReadReminder = (reminder: any, userId: string) => {
+  return reminder.readBy?.some((id: any) => String(id) === String(userId));
+};
+
+const markReminderAsRead = async (reminderId: string) => {
+  try {
+    const token = await SecureStore.getItemAsync('exhibitorToken');
+    if (!token || !reminderId) return;
+
+    await apiClient.post(
+      '/reminders/mark-read',
+      { reminderId },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  } catch (err) {
+    console.log('Failed to mark foreground reminder as read', err);
+  }
+};
 
 const getUserIdFromToken = (token: string) => {
   try {
