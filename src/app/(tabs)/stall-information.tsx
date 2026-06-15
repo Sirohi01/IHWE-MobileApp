@@ -48,7 +48,12 @@ export default function StallInformationScreen() {
   const exhibitorName = data?.exhibitorName || 'Company Name';
   const industrySector = data?.industrySector || 'Healthcare';
 
-  const contactPerson = data?.contactPerson || 'Delegate Name';
+  const primaryContactName = [
+    data?.contact1?.title,
+    data?.contact1?.firstName,
+    data?.contact1?.lastName,
+  ].filter(Boolean).join(' ').trim();
+  const contactPerson = data?.contactPerson || primaryContactName || data?.contact1?.name || 'Delegate Name';
   const teamMembersCount = data?.teamMembers?.length || 0;
 
   const isDocVerified = data?.documentStatus === 'verified';
