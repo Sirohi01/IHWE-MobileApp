@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, RefreshControl } from 'react-native';
-import { Search, Building2, MapPin, Briefcase, CalendarPlus, ChevronLeft } from 'lucide-react-native';
+import { Search, Building2, MapPin, Briefcase, CalendarPlus, ChevronLeft, CheckCircle2, Clock } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { apiClient } from '@/core/api/axios';
 
@@ -21,6 +21,12 @@ type Buyer = {
   registrationId?: string;
 };
 
+type BuyerMeetingState = {
+  status?: string;
+  date?: string;
+  timeSlot?: string;
+};
+
 const capitalizeText = (value?: string | null, fallback = '') => {
   if (!value) return fallback;
   return value
@@ -37,6 +43,7 @@ export default function BuyersManagementScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('');
   const [exhibitorId, setExhibitorId] = useState('');
+  const [requestedMeetings, setRequestedMeetings] = useState<Record<string, BuyerMeetingState>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -48,12 +55,24 @@ export default function BuyersManagementScreen() {
       if (!id) return router.replace('/(auth)/login');
       setExhibitorId(id);
 
-      const [buyerRes, catRes] = await Promise.all([
+      const [buyerRes, catRes, meetingsRes] = await Promise.all([
         apiClient.get('/bsm/buyers', { params: { search: searchQuery, primaryCategory: activeCategory, limit: 100 } }),
         apiClient.get('/bsm/buyers/categories').catch(() => null),
+        apiClient.get(`/bsm/exhibitor/${id}`).catch(() => null),
       ]);
       setBuyers(buyerRes.data?.data || []);
       setCategories(catRes?.data?.primaryCategories || []);
+      const meetingMap: Record<string, BuyerMeetingState> = {};
+      (meetingsRes?.data?.data || []).forEach((meeting: any) => {
+        const buyerId = String(meeting.buyerId?._id || meeting.buyerId || '');
+        if (!buyerId || ['Rejected', 'Cancelled'].includes(meeting.status)) return;
+        meetingMap[buyerId] = {
+          status: meeting.status,
+          date: meeting.date,
+          timeSlot: meeting.timeSlot,
+        };
+      });
+      setRequestedMeetings(meetingMap);
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.message || 'Could not load buyers');
     } finally {
@@ -80,6 +99,10 @@ export default function BuyersManagementScreen() {
         remarks: `Meeting interest from mobile app for ${buyer.companyName || buyer.companyFirmName || buyer.fullName || 'buyer'}`,
       });
       Alert.alert('Request Sent', 'Your meeting interest has been sent. Admin will assign a slot.');
+      setRequestedMeetings((prev) => ({
+        ...prev,
+        [buyer._id]: { status: 'Pending' },
+      }));
     } catch (error: any) {
       Alert.alert('Could not request meeting', error.response?.data?.message || 'Please try again.');
     }
@@ -153,6 +176,10 @@ export default function BuyersManagementScreen() {
               ?.map((item) => capitalizeText(item))
               .filter(Boolean)
               .join(', ');
+            const meetingState = requestedMeetings[buyer._id];
+            const hasRequested = !!meetingState;
+            const isScheduled = meetingState?.status === 'Approved';
+            const buttonLabel = isScheduled ? 'Meeting Scheduled' : hasRequested ? 'Already Requested' : 'Request Meeting';
 
             return (
             <View key={buyer._id} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm mb-3">
@@ -178,9 +205,30 @@ export default function BuyersManagementScreen() {
               {!!secondaryCategories && (
                 <Text className="text-slate-400 text-[10px] mt-2" numberOfLines={2}>{secondaryCategories}</Text>
               )}
-              <TouchableOpacity onPress={() => requestMeeting(buyer)} className="mt-4 bg-[#1a3a7c] rounded-xl py-3 flex-row items-center justify-center">
-                <CalendarPlus size={16} color="white" />
-                <Text className="text-white font-black text-xs ml-2 uppercase tracking-wider">Request Meeting</Text>
+              {hasRequested && (
+                <View className={`mt-3 rounded-xl p-3 border ${isScheduled ? 'bg-green-50 border-green-100' : 'bg-amber-50 border-amber-100'}`}>
+                  <View className="flex-row items-center">
+                    {isScheduled ? <CheckCircle2 size={14} color="#16a34a" /> : <Clock size={14} color="#d97706" />}
+                    <Text className={`text-xs font-black ml-2 ${isScheduled ? 'text-green-700' : 'text-amber-700'}`}>
+                      {isScheduled ? 'Scheduled by admin' : 'Request already sent'}
+                    </Text>
+                  </View>
+                  {isScheduled && (
+                    <Text className="text-[10px] text-green-700 mt-1 font-semibold">
+                      {meetingState?.date ? new Date(meetingState.date).toLocaleDateString('en-IN') : 'Date pending'} - {meetingState?.timeSlot || 'Time pending'}
+                    </Text>
+                  )}
+                </View>
+              )}
+              <TouchableOpacity
+                onPress={() => requestMeeting(buyer)}
+                disabled={hasRequested}
+                className={`mt-4 rounded-xl py-3 flex-row items-center justify-center ${hasRequested ? 'bg-slate-200' : 'bg-[#1a3a7c]'}`}
+              >
+                {hasRequested ? <CheckCircle2 size={16} color="#64748b" /> : <CalendarPlus size={16} color="white" />}
+                <Text className={`font-black text-xs ml-2 uppercase tracking-wider ${hasRequested ? 'text-slate-500' : 'text-white'}`}>
+                  {buttonLabel}
+                </Text>
               </TouchableOpacity>
             </View>
             );
