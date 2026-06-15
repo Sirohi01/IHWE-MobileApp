@@ -27,7 +27,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/appLogo.png"
     },
     "plugins": [
       "expo-router",
@@ -54,7 +54,8 @@
       "expo-image-picker",
       "expo-notifications",
       "expo-audio",
-      "expo-asset"
+      "expo-asset",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true

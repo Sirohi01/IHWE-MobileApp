@@ -1,18 +1,44 @@
 import '../global.css';
 import { Stack, router } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
-import { AppState, Alert } from 'react-native';
+import { AppState, Alert, View, StyleSheet } from 'react-native';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import * as SplashScreen from 'expo-splash-screen';
+
+SplashScreen.preventAutoHideAsync();
 import { apiClient } from '@/core/api/axios';
 import { imageUrl } from '@/core/config/env';
 
 import { usePushNotifications } from '@/core/hooks/usePushNotifications';
 
 export default function RootLayout() {
+  const [isVideoFinished, setIsVideoFinished] = useState(false);
   const appState = useRef(AppState.currentState);
   const lastAlertedId = useRef<string | null>(null);
-  
+
+  const player = useVideoPlayer(require('../../assets/video/ihweVideo1.mp4'), p => {
+    p.loop = false;
+    p.play();
+  });
+
+  useEffect(() => {
+    const playToEndSub = player.addListener('playToEnd', () => {
+      setIsVideoFinished(true);
+    });
+    const playingChangeSub = player.addListener('playingChange', (isPlaying) => {
+      if (isPlaying) {
+        SplashScreen.hideAsync().catch(() => {});
+      }
+    });
+
+    return () => {
+      playToEndSub.remove();
+      playingChangeSub.remove();
+    };
+  }, [player]);
+
   // Register for push notifications
   const { notification } = usePushNotifications();
 
@@ -82,7 +108,7 @@ export default function RootLayout() {
     if (reminder.audioUrl) {
       try {
         const fullUrl = imageUrl(reminder.audioUrl);
-        
+
         await setAudioModeAsync({
           playsInSilentMode: true,
           shouldPlayInBackground: true,
@@ -112,6 +138,19 @@ export default function RootLayout() {
       ]
     );
   };
+
+  if (!isVideoFinished) {
+    return (
+      <View style={styles.videoContainer}>
+        <VideoView
+          style={styles.video}
+          player={player}
+          contentFit="cover"
+          nativeControls={false}
+        />
+      </View>
+    );
+  }
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
@@ -145,3 +184,16 @@ const getUserIdFromToken = (token: string) => {
     return null;
   }
 };
+
+const styles = StyleSheet.create({
+  videoContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  video: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+});
+
