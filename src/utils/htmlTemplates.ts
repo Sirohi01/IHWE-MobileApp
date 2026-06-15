@@ -43,28 +43,43 @@ export const generateInvoiceHtml = (data: any, type: string, headerImgUrl: strin
         disc: 0
     }] : doc?.items || [];
 
-    const company = data.company || {};
-    const c1 = company?.contacts?.[0] || {};
-    const clientContactPerson = c1.firstName ? `${c1.firstName} ${c1.surname || ''}`.trim() : '—';
+    const company = doc?.exhibitor || data.company || {};
+    const exhibitorContact = doc?.exhibitor?.contact1;
+    const companyContact = doc?.exhibitor?.contacts?.[0] || data.company?.contacts?.[0] || {};
+    
+    let clientContactPerson = '—';
+    let clientContactNo = '—';
+    let clientContactEmail = '—';
+    
+    if (exhibitorContact) {
+        clientContactPerson = `${exhibitorContact.firstName || ''} ${exhibitorContact.lastName || ''}`.trim() || '—';
+        clientContactNo = exhibitorContact.mobile || '—';
+        clientContactEmail = exhibitorContact.email || '—';
+    } else if (companyContact?.firstName || companyContact?.name) {
+        clientContactPerson = companyContact.firstName ? `${companyContact.firstName} ${companyContact.surname || ''}`.trim() : (companyContact.name || '—');
+        clientContactNo = companyContact.mobile || '—';
+        clientContactEmail = companyContact.email || '—';
+    }
 
-    // Fallback data mapping based on API response
-    const invoiceNo = isEstimate ? doc?.est_no : isReceipt ? (doc?.cash_receipt_no || doc?._id) : doc?.inv_no;
+    const isInvoice = type === 'invoice';
+    const invoiceNo = isEstimate ? doc?.est_no : isReceipt ? (doc?.cash_receipt_no || doc?._id) : (doc?.invoice_no || doc?.inv_no);
     const invoiceDate = doc?.added || doc?.payment_date ? new Date(doc.payment_date || doc.added).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
 
-    // Receipt won't have company data inside the API response typically, so fallback to empty
-    const clientCompanyName = doc?.company_name || company?.companyName || '—';
+    const clientCompanyName = doc?.company_name || doc?.exhibitor?.exhibitorName || company?.companyName || company?.exhibitorName || '—';
     const clientCompanyAddress = doc?.company_addr || [company?.address, company?.city, company?.pincode ? `- ${company.pincode}` : '', company?.state, company?.country].filter(Boolean).join(', ');
     const clientGstNo = doc?.company_gst_no || doc?.gst_no || company?.gst || '';
+    
+    const shipmentContactPerson = doc?.consignee_person || 'Vijay Sharma';
+    const shipmentContactNo = doc?.consignee_phone || clientContactNo;
 
     // Calculations
     const totalTaxable = isReceipt ? (parseFloat(doc.f_amount) || 0) : items.reduce((sum: number, item: any) => {
-        const amt = parseFloat(item.amount) || 0;
-        const disc = parseFloat(item.disc) || 0;
-        return sum + (amt - disc);
+        const taxable = isInvoice ? parseFloat(item.taxableValue) : (parseFloat(item.amount) || 0) - (parseFloat(item.disc) || 0);
+        return sum + (taxable || 0);
     }, 0);
     const subTotal = totalTaxable;
 
-    const taxValue = isReceipt ? 0 : items.reduce((sum: number, item: any) => sum + (parseFloat(item.tax) || 0), 0);
+    const taxValue = isReceipt ? 0 : items.reduce((sum: number, item: any) => sum + (parseFloat(item.gstAmount || item.tax) || 0), 0);
     const totalAmount = isReceipt ? subTotal : (subTotal + taxValue);
 
     const isIgst = company?.state && company.state.toLowerCase() !== 'delhi';
@@ -124,8 +139,8 @@ export const generateInvoiceHtml = (data: any, type: string, headerImgUrl: strin
                             <table class="no-border" style="width: 100%; margin-top: 4px;">
                                 <tbody>
                                     <tr><td style="width: 1%; white-space: nowrap;">Contact Person</td><td style="width: 1%;">:</td><td>${clientContactPerson}</td></tr>
-                                    <tr><td style="width: 1%; white-space: nowrap;">Contact No.</td><td style="width: 1%;">:</td><td>${c1.mobile || '—'}</td></tr>
-                                    <tr><td style="width: 1%; white-space: nowrap;">Email</td><td style="width: 1%;">:</td><td>${c1.email || '—'}</td></tr>
+                                    <tr><td style="width: 1%; white-space: nowrap;">Contact No.</td><td style="width: 1%;">:</td><td>${clientContactNo}</td></tr>
+                                    <tr><td style="width: 1%; white-space: nowrap;">Email</td><td style="width: 1%;">:</td><td>${clientContactEmail}</td></tr>
                                     <tr><td style="width: 1%; white-space: nowrap;">GSTIN.</td><td style="width: 1%;">:</td><td>${clientGstNo || '—'}</td></tr>
                                 </tbody>
                             </table>
@@ -135,8 +150,8 @@ export const generateInvoiceHtml = (data: any, type: string, headerImgUrl: strin
                             <div style="margin-top: 2px;">${eventPlaceOfSupply}</div>
                             <table class="no-border" style="width: 100%; margin-top: 4px;">
                                 <tbody>
-                                    <tr><td style="width: 1%; white-space: nowrap;">Contact Person</td><td style="width: 1%;">:</td><td>${doc?.consignee_person || doc?.consignee_name || '—'}</td></tr>
-                                    <tr><td style="width: 1%; white-space: nowrap;">Contact No.</td><td style="width: 1%;">:</td><td>${doc?.consignee_phone || '—'}</td></tr>
+                                    <tr><td style="width: 1%; white-space: nowrap;">Contact Person</td><td style="width: 1%;">:</td><td>${shipmentContactPerson}</td></tr>
+                                    <tr><td style="width: 1%; white-space: nowrap;">Contact No.</td><td style="width: 1%;">:</td><td>${shipmentContactNo}</td></tr>
                                     <tr><td style="width: 1%; white-space: nowrap;">GSTIN.</td><td style="width: 1%;">:</td><td>${eventGstNo}</td></tr>
                                 </tbody>
                             </table>
@@ -173,7 +188,8 @@ export const generateInvoiceHtml = (data: any, type: string, headerImgUrl: strin
             <tbody>
                 ${items.map((item: any, idx: number) => {
         const amt = parseFloat(item.amount) || 0;
-        const disc = parseFloat(item.disc) || 0;
+        const taxable = isInvoice ? parseFloat(item.taxableValue) || 0 : amt - (parseFloat(item.disc) || 0);
+        const discStr = isInvoice ? (item.discountPct ? item.discountPct + '%' : '0%') : (item.disc ? item.disc + '%' : '0%');
         return `
                     <tr>
                         <td class="text-center" style="vertical-align: top; padding-top: 8px;">${idx + 1}</td>
@@ -187,8 +203,8 @@ export const generateInvoiceHtml = (data: any, type: string, headerImgUrl: strin
                         <td class="text-center" style="vertical-align: top; padding-top: 8px;">${item.size || '-'}</td>
                         <td class="text-center" style="vertical-align: top; padding-top: 8px;">${item.unit || 'Sqm'}</td>
                         <td class="text-right" style="vertical-align: top; padding-top: 8px;">${Number(item.rate || item.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                        <td class="text-center" style="vertical-align: top; padding-top: 8px;">${item.disc ? item.disc + '%' : '0%'}</td>
-                        <td class="text-right bold" style="vertical-align: top; padding-top: 8px;">${Number(amt - disc).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                        <td class="text-center" style="vertical-align: top; padding-top: 8px;">${discStr}</td>
+                        <td class="text-right bold" style="vertical-align: top; padding-top: 8px;">${Number(taxable).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     </tr>
                     `;
     }).join('')}
@@ -233,10 +249,10 @@ export const generateInvoiceHtml = (data: any, type: string, headerImgUrl: strin
             </thead>
             <tbody>
                 ${items.map((item: any, idx: number) => {
-        const itemTaxable = (parseFloat(item.amount) || 0) - (parseFloat(item.disc) || 0);
-        const gstRate = parseFloat(item.gstRate) || 18;
+        const itemTaxable = isInvoice ? (parseFloat(item.taxableValue) || 0) : ((parseFloat(item.amount) || 0) - (parseFloat(item.disc) || 0));
+        let gstRate = parseFloat(item.gstPct || item.gstRate) || 18;
         const halfGst = gstRate / 2;
-        const gstAmt = parseFloat(item.tax) || 0;
+        const gstAmt = parseFloat(item.gstAmount || item.tax) || 0;
         const halfGstAmt = gstAmt / 2;
         return `
                     <tr>
