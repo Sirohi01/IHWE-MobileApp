@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Modal, TextInput, Alert, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { UserCircle2, Mail, Phone, MapPin, Building2, FileText, ChevronLeft, Edit3, X, CheckCircle2 } from 'lucide-react-native';
-import { apiClient } from '@/core/api/axios';
+import { API_URL, apiClient } from '@/core/api/axios';
 
 export default function ProfileDetailsScreen() {
     const router = useRouter();
@@ -23,6 +23,20 @@ export default function ProfileDetailsScreen() {
         panNo: '',
         landlineNo: ''
     });
+
+    const getMediaUrl = (value?: string) => {
+        if (!value) return '';
+        const normalized = String(value).replace(/\\/g, '/');
+        if (normalized.startsWith('http://') || normalized.startsWith('https://')) return normalized;
+        const serverUrl = API_URL.replace(/\/api\/?$/, '');
+        const uploadsIndex = normalized.indexOf('/uploads/');
+        if (uploadsIndex >= 0) return `${serverUrl}${normalized.slice(uploadsIndex)}`;
+        const relativeUploadsIndex = normalized.indexOf('uploads/');
+        if (relativeUploadsIndex >= 0) return `${serverUrl}/${normalized.slice(relativeUploadsIndex)}`;
+        if (normalized.startsWith('/uploads/')) return `${serverUrl}${normalized}`;
+        if (normalized.startsWith('uploads/')) return `${serverUrl}/${normalized}`;
+        return `${serverUrl}/${normalized.replace(/^\/+/, '')}`;
+    };
 
     useEffect(() => {
         fetchProfile();
@@ -100,6 +114,8 @@ export default function ProfileDetailsScreen() {
         );
     }
 
+    const logoUrl = getMediaUrl(profile.companyLogoUrl || profile.companyLogo);
+
     return (
         <View className="flex-1 bg-[#f4f7f9]">
             {/* Custom Header */}
@@ -126,8 +142,12 @@ export default function ProfileDetailsScreen() {
                 
                 {/* Main Profile Card */}
                 <View className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 mb-4 items-center">
-                    <View className="w-20 h-20 bg-blue-100 rounded-full items-center justify-center mb-3 border-4 border-white shadow-sm">
-                        <Building2 size={32} color="#3b82f6" />
+                    <View className="w-20 h-20 bg-blue-50 rounded-2xl items-center justify-center mb-3 border border-blue-100 shadow-sm overflow-hidden">
+                        {logoUrl ? (
+                            <Image source={{ uri: logoUrl }} className="w-full h-full" resizeMode="contain" />
+                        ) : (
+                            <Building2 size={32} color="#3b82f6" />
+                        )}
                     </View>
                     <Text className="text-[20px] font-black text-slate-800 text-center">{profile.brandName || profile.exhibitorName}</Text>
                     {profile.companyDescription ? (
