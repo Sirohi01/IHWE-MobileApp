@@ -332,16 +332,16 @@ export default function MyEventTab() {
                 <View className="bg-white rounded-[20px] p-4 shadow-sm border border-slate-100 mb-2 flex-row justify-between items-center">
                   <View className="items-center flex-1 border-r border-slate-100">
                     <Text className="text-slate-400 font-bold uppercase text-[9px] tracking-widest mb-1">Setup</Text>
-                    <Text className="text-[#0f172a] font-black text-[14px] text-center">{setupLabel}</Text>
+                    <Text className="text-[#0f172a] font-black text-[12px] text-center">{setupLabel}</Text>
 
                   </View>
                   <View className="items-center flex-1 border-r border-slate-100">
                     <Text className="text-blue-600 font-bold uppercase text-[9px] tracking-widest mb-1">Event</Text>
-                    <Text className="text-blue-700 font-black text-[14px] text-center">{eventDateLabel}</Text>
+                    <Text className="text-blue-700 font-black text-[12px] text-center">{eventDateLabel}</Text>
                   </View>
                   <View className="items-center flex-1">
                     <Text className="text-slate-400 font-bold uppercase text-[9px] tracking-widest mb-1">Dismantle</Text>
-                    <Text className="text-[#0f172a] font-black text-[14px] text-center">{dismantleLabel}</Text>
+                    <Text className="text-[#0f172a] font-black text-[12px] text-center">{dismantleLabel}</Text>
 
                   </View>
                 </View>
