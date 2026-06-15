@@ -249,6 +249,7 @@ export default function AddOnServicesScreen() {
 
     let finalImageUrl = item.imageUrl ? imageUrl(item.imageUrl) : null;
     if (finalImageUrl) {
+
       finalImageUrl = finalImageUrl.replace(/ /g, '%20');
     }
     return (
