@@ -139,6 +139,14 @@ export default function StallInformationScreen() {
               <Text className="text-[#0f172a] font-black text-[14px]">{teamMembersCount} Registered</Text>
             </View>
           </View>
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/team-members')}
+            className="mx-3.5 mb-3.5 bg-[#1a3a7c] rounded-xl py-3 flex-row items-center justify-center"
+          >
+            {/* @ts-ignore */}
+            <PlusCircle size={16} color="#ffffff" />
+            <Text className="text-white font-black text-xs ml-2 uppercase tracking-wider">Manage Team Members</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Status Indicators */}

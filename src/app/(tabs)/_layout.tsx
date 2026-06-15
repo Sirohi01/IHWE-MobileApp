@@ -163,6 +163,13 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="team-members"
+          options={{
+            href: null,
+            title: 'Team Members'
+          }}
+        />
+        <Tabs.Screen
           name="my-products"
           options={{
             href: null,

@@ -34,7 +34,7 @@ import {
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { apiClient } from '@/core/api/axios';
+import { API_URL, apiClient } from '@/core/api/axios';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { useTourStore } from '@/core/store/useTourStore';
 
@@ -79,7 +79,9 @@ export default function MoreMenuScreen() {
 
   useEffect(() => {
     fetchData();
+  }, []);
 
+  useEffect(() => {
     let timer: ReturnType<typeof setInterval>;
 
     if (data?.eventId?.startDate) {
@@ -106,7 +108,21 @@ export default function MoreMenuScreen() {
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [data]);
+  }, [data?.eventId?.startDate]);
+
+  const getMediaUrl = (value?: string) => {
+    if (!value) return '';
+    const normalized = String(value).replace(/\\/g, '/');
+    if (normalized.startsWith('http://') || normalized.startsWith('https://')) return normalized;
+    const serverUrl = API_URL.replace(/\/api\/?$/, '');
+    const uploadsIndex = normalized.indexOf('/uploads/');
+    if (uploadsIndex >= 0) return `${serverUrl}${normalized.slice(uploadsIndex)}`;
+    const relativeUploadsIndex = normalized.indexOf('uploads/');
+    if (relativeUploadsIndex >= 0) return `${serverUrl}/${normalized.slice(relativeUploadsIndex)}`;
+    if (normalized.startsWith('/uploads/')) return `${serverUrl}${normalized}`;
+    if (normalized.startsWith('uploads/')) return `${serverUrl}/${normalized}`;
+    return `${serverUrl}/${normalized.replace(/^\/+/, '')}`;
+  };
 
   const fetchData = async () => {
     try {
@@ -177,6 +193,7 @@ export default function MoreMenuScreen() {
   const exhibitorName = data?.exhibitorName || 'Loading...';
   const companyName = data?.companyName || 'Company Profile';
   const initials = exhibitorName.substring(0, 2).toUpperCase();
+  const logoUrl = getMediaUrl(data?.companyLogoUrl || data?.companyLogo);
 
   return (
     <View className="flex-1 bg-[#f4f7f9]">
@@ -194,8 +211,12 @@ export default function MoreMenuScreen() {
         </View>
 
         <View className="flex-row items-center relative z-10">
-          <View className="w-14 h-14 bg-indigo-50 rounded-full items-center justify-center border border-indigo-100 mr-4">
-            <Text className="text-indigo-600 font-black text-[20px] tracking-wider">{initials}</Text>
+          <View className="w-14 h-14 bg-indigo-50 rounded-full items-center justify-center border border-indigo-100 mr-4 overflow-hidden">
+            {logoUrl ? (
+              <Image source={{ uri: logoUrl }} className="w-full h-full" resizeMode="contain" />
+            ) : (
+              <Text className="text-indigo-600 font-black text-[20px] tracking-wider">{initials}</Text>
+            )}
           </View>
           <View className="flex-1">
             <Text className="text-[#0f172a] font-black text-[18px] tracking-tight mb-1" numberOfLines={1}>{exhibitorName}</Text>
@@ -302,6 +323,14 @@ export default function MoreMenuScreen() {
             subtitle="Manage your exhibitor passes & badges"
             iconBg="#f0fdf4" iconColor="#22c55e"
             onPress={() => router.push('/(tabs)/passes-and-hospitality')}
+            disabled={false}
+          />
+          <MenuItem
+            icon={Users}
+            title="Team Members"
+            subtitle="Add and manage your stall team"
+            iconBg="#eff6ff" iconColor="#2563eb"
+            onPress={() => router.push('/(tabs)/team-members')}
             disabled={false}
           />
           <MenuItem
