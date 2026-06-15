@@ -18,7 +18,12 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.manish_sirohi.ihweportal"
+      "package": "com.manish_sirohi.ihweportal",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "output": "static",
@@ -51,8 +56,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "b7498bfa-0be7-4a7f-ace8-37477839f45a"
+        "projectId": "c63048ca-53f2-4b8d-929c-b48bc0b4168b"
       }
-    }
+    },
+    "owner": "manishsirohi01"
   }
 }
