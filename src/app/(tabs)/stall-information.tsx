@@ -6,6 +6,13 @@ import { apiClient } from '@/core/api/axios';
 import { ChevronLeft, Maximize2, Tag, Package, Box, Zap, Trash2, Sofa, PlusCircle, PenTool, LayoutGrid, CheckCircle2, AlertCircle, Users, CreditCard, User, Building, Map } from 'lucide-react-native';
 import { FloorPlanViewer } from '@/components/dashboard/FloorPlanViewer';
 
+const formatHallLabel = (value?: any) => {
+  if (!value) return 'Hall 8, 9 & 10';
+  const text = String(value).trim();
+  if (!text) return 'Hall 8, 9 & 10';
+  return text.toLowerCase().startsWith('hall') ? text : `Hall ${text}`;
+};
+
 export default function StallInformationScreen() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -45,6 +52,19 @@ export default function StallInformationScreen() {
   const stallNumber = data?.participation?.stallFor || 'TBA';
   const stallSize = data?.participation?.stallSize || '0';
   const stallType = data?.participation?.type || 'Shell Scheme';
+  const hallLabel = formatHallLabel(
+    data?.participation?.hallName ||
+    data?.participation?.hallNumber ||
+    data?.participation?.hallNo ||
+    data?.participation?.hall ||
+    data?.hallName ||
+    data?.hallNumber ||
+    data?.hallNo ||
+    data?.hall ||
+    data?.eventId?.hallName ||
+    data?.eventId?.hallNumber ||
+    data?.eventId?.hall
+  );
   const exhibitorName = data?.exhibitorName || 'Company Name';
   const industrySector = data?.industrySector || 'Healthcare';
 
@@ -202,7 +222,7 @@ export default function StallInformationScreen() {
               <Building size={12} color="#0ea5e9" />
             </View>
             <Text className="text-slate-400 font-bold text-[8px] uppercase tracking-widest mb-0.5">Hall</Text>
-            <Text className="text-[#0f172a] font-black text-[11px]">Hall 04</Text>
+            <Text className="text-[#0f172a] font-black text-[11px]" numberOfLines={1}>{hallLabel}</Text>
           </View>
         </View>
 

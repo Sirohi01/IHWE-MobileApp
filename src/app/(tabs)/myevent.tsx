@@ -8,6 +8,13 @@ import { apiClient } from '@/core/api/axios';
 
 const { width } = Dimensions.get('window');
 
+const formatHallLabel = (value?: any) => {
+  if (!value) return 'Hall 8, 9 & 10';
+  const text = String(value).trim();
+  if (!text) return 'Hall 8, 9 & 10';
+  return text.toLowerCase().startsWith('hall') ? text : `Hall ${text}`;
+};
+
 export default function MyEventTab() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +56,19 @@ export default function MyEventTab() {
   const sector = data?.industrySector || 'Healthcare Professional';
   const stallNumber = data?.participation?.stallFor || 'TBA';
   const stallSize = data?.participation?.stallSize || '0';
+  const hallLabel = formatHallLabel(
+    data?.participation?.hallName ||
+    data?.participation?.hallNumber ||
+    data?.participation?.hallNo ||
+    data?.participation?.hall ||
+    data?.hallName ||
+    data?.hallNumber ||
+    data?.hallNo ||
+    data?.hall ||
+    data?.eventId?.hallName ||
+    data?.eventId?.hallNumber ||
+    data?.eventId?.hall
+  );
   const status = data?.status || 'Pending';
   const passId = `IHWE-2026-${contactPerson.replace(/\s/g, '').substring(0, 4).toUpperCase()}8X`;
 
@@ -168,7 +188,7 @@ export default function MyEventTab() {
               {/* Quick Info Grid */}
               <View className="px-1 mb-1 mt-2">
                 <View className="flex-row justify-between mb-2">
-                  <InfoCard title="Stall Number" value={stallNumber} subtitle="Hall 04" icon={<Store size={18} color="#1d4ed8" />} />
+                  <InfoCard title="Stall Number" value={stallNumber} subtitle={hallLabel} icon={<Store size={18} color="#1d4ed8" />} />
                   <InfoCard title="Team Members" value={String(data?.teamMembers?.length || 0)} subtitle="Registered" icon={<User size={18} color="#1d4ed8" />} />
                 </View>
 
