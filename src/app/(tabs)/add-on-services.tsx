@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { apiClient } from '@/core/api/axios';
 import { ChevronLeft, Search, ShoppingCart, LayoutGrid, Zap, Megaphone, Monitor, Wrench, Coffee, Users, Plus, Minus, Trash2, CheckCircle2, ChevronRight, FileText, Image as ImageIcon, Info, Store, Gift } from 'lucide-react-native';
+import { imageUrl } from '@/core/config/env';
 import { RazorpayWebView } from '@/components/dashboard/RazorpayWebView';
 
 interface CartItem {
@@ -216,7 +217,7 @@ export default function AddOnServicesScreen() {
 
   const purchasableItems = catalog.filter(i => i.type === 'purchasable' && i.isActive);
   const complementaryItems = catalog.filter(i => i.type === 'complimentary' && i.isActive);
-  
+
   let filteredItems = purchasableItems;
   if (activeTab !== 'All Items') {
     filteredItems = filteredItems.filter(i => i.category === activeTab);
@@ -246,22 +247,15 @@ export default function AddOnServicesScreen() {
   const renderItem = ({ item }: { item: any }) => {
     const inCart = cart.find(c => c.accessoryId === item._id);
 
-    let finalImageUrl = null;
-    if (item.imageUrl) {
-      if (item.imageUrl.startsWith('http')) {
-        finalImageUrl = item.imageUrl;
-      } else {
-        const cleanServer = SERVER_URL.endsWith('/') ? SERVER_URL.slice(0, -1) : SERVER_URL;
-        const cleanPath = item.imageUrl.startsWith('/') ? item.imageUrl : `/${item.imageUrl}`;
-        finalImageUrl = `${cleanServer}${cleanPath}`;
-      }
-      finalImageUrl = encodeURI(finalImageUrl);
+    let finalImageUrl = item.imageUrl ? imageUrl(item.imageUrl) : null;
+    if (finalImageUrl) {
+      finalImageUrl = finalImageUrl.replace(/ /g, '%20');
     }
     return (
       <View className="bg-white w-[48%] rounded-xl mb-3 shadow-sm border border-slate-200 overflow-hidden">
         <View className="h-28 bg-slate-50 relative border-b border-slate-100 items-center justify-center p-2">
           {finalImageUrl ? (
-            <Image source={{ uri: finalImageUrl, headers: { 'ngrok-skip-browser-warning': 'true' } }} className="w-full h-full" resizeMode="contain" />
+            <Image source={{ uri: finalImageUrl }} className="w-full h-full" resizeMode="contain" />
           ) : (
             // @ts-ignore
             <ImageIcon size={30} color="#cbd5e1" />
@@ -455,23 +449,16 @@ export default function AddOnServicesScreen() {
                 </View>
               ) : (
                 cart.map(item => {
-                  let finalImageUrl = null;
-                  if (item.imageUrl) {
-                    if (item.imageUrl.startsWith('http')) {
-                      finalImageUrl = item.imageUrl;
-                    } else {
-                      const cleanServer = SERVER_URL.endsWith('/') ? SERVER_URL.slice(0, -1) : SERVER_URL;
-                      const cleanPath = item.imageUrl.startsWith('/') ? item.imageUrl : `/${item.imageUrl}`;
-                      finalImageUrl = `${cleanServer}${cleanPath}`;
-                    }
-                    finalImageUrl = encodeURI(finalImageUrl);
+                  let finalImageUrl = item.imageUrl ? imageUrl(item.imageUrl) : null;
+                  if (finalImageUrl) {
+                    finalImageUrl = finalImageUrl.replace(/ /g, '%20');
                   }
                   const itemTotal = (item.unitPrice * item.qty) * (1 + item.gstPercent / 100);
                   return (
                     <View key={item.accessoryId} className="flex-row items-center py-3 border-b border-slate-100">
                       <View className="w-14 h-14 bg-slate-50 rounded-lg border border-slate-200 items-center justify-center p-1 mr-3">
                         {finalImageUrl ? (
-                          <Image source={{ uri: finalImageUrl, headers: { 'ngrok-skip-browser-warning': 'true' } }} className="w-full h-full" resizeMode="contain" />
+                          <Image source={{ uri: finalImageUrl }} className="w-full h-full" resizeMode="contain" />
                         ) : (
                           // @ts-ignore
                           <ImageIcon size={20} color="#cbd5e1" />
@@ -572,7 +559,7 @@ export default function AddOnServicesScreen() {
 
             <ScrollView className="flex-1 px-4 py-4" showsVerticalScrollIndicator={false}>
               <Text className="text-slate-500 font-bold text-[12px] mb-4 text-center">These items are provided for free based on your stall allocation.</Text>
-              
+
               {complementaryItems.length === 0 ? (
                 <View className="items-center justify-center py-10 opacity-50">
                   {/* @ts-ignore */}
@@ -581,23 +568,16 @@ export default function AddOnServicesScreen() {
                 </View>
               ) : (
                 complementaryItems.map(item => {
-                  let finalImageUrl = null;
-                  if (item.imageUrl) {
-                    if (item.imageUrl.startsWith('http')) {
-                      finalImageUrl = item.imageUrl;
-                    } else {
-                      const cleanServer = SERVER_URL.endsWith('/') ? SERVER_URL.slice(0, -1) : SERVER_URL;
-                      const cleanPath = item.imageUrl.startsWith('/') ? item.imageUrl : `/${item.imageUrl}`;
-                      finalImageUrl = `${cleanServer}${cleanPath}`;
-                    }
-                    finalImageUrl = encodeURI(finalImageUrl);
+                  let finalImageUrl = item.imageUrl ? imageUrl(item.imageUrl) : null;
+                  if (finalImageUrl) {
+                    finalImageUrl = finalImageUrl.replace(/ /g, '%20');
                   }
-                  
+
                   return (
                     <View key={item._id} className="flex-row items-center py-3 px-3 mb-3 bg-slate-50 border border-slate-200 rounded-xl">
                       <View className="w-14 h-14 bg-white rounded-lg border border-slate-200 items-center justify-center p-1 mr-3">
                         {finalImageUrl ? (
-                          <Image source={{ uri: finalImageUrl, headers: { 'ngrok-skip-browser-warning': 'true' } }} className="w-full h-full" resizeMode="contain" />
+                          <Image source={{ uri: finalImageUrl }} className="w-full h-full" resizeMode="contain" />
                         ) : (
                           // @ts-ignore
                           <ImageIcon size={20} color="#cbd5e1" />
