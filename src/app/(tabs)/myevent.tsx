@@ -15,10 +15,39 @@ const formatHallLabel = (value?: any) => {
   return text.toLowerCase().startsWith('hall') ? text : `Hall ${text}`;
 };
 
+const formatDay = (dateValue?: string | Date) => {
+  if (!dateValue) return '--';
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return '--';
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+};
+
+const formatEventDateLabel = (start?: string, end?: string) => {
+  if (!start) return 'Event dates pending';
+  if (!end) return formatDay(start);
+  return `${formatDay(start)} - ${formatDay(end)}`;
+};
+
+const formatOffsetDateLabel = (start?: string, startOffset = 0, end?: string, endOffset?: number) => {
+  if (!start) return '--';
+  const first = new Date(start);
+  if (Number.isNaN(first.getTime())) return '--';
+  first.setDate(first.getDate() + startOffset);
+  if (!end || endOffset === undefined) return formatDay(first);
+  const second = new Date(end);
+  if (Number.isNaN(second.getTime())) return formatDay(first);
+  second.setDate(second.getDate() + endOffset);
+  return `${formatDay(first)} - ${formatDay(second)}`;
+};
+
 export default function MyEventTab() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Overview');
+  const [passRequests, setPassRequests] = useState<any[]>([]);
+  const [passConfigs, setPassConfigs] = useState<any[]>([]);
+  const [serviceOrders, setServiceOrders] = useState<any[]>([]);
+  const [eventDocs, setEventDocs] = useState<any[]>([]);
 
   useEffect(() => {
     fetchExhibitorData();
@@ -34,7 +63,37 @@ export default function MyEventTab() {
 
       const res = await apiClient.get('/exhibitor-auth/dashboard', { headers: { Authorization: `Bearer ${token}` } });
       if (res.data.success) {
-        setData(res.data.data);
+        const exhibitor = res.data.data;
+        setData(exhibitor);
+
+        const exhibitorId = exhibitor?._id;
+        if (exhibitorId) {
+          const [passRes, passConfigRes, orderRes, reqRes, docsRes] = await Promise.all([
+            apiClient.get(`/exhibitor-pass-requests/exhibitor/${exhibitorId}`).catch(() => null),
+            apiClient.get('/exhibitor-pass-config/active').catch(() => null),
+            apiClient.get('/stall-accessories/orders', { params: { exhibitorId } }).catch(() => null),
+            apiClient.get('/document-requirements').catch(() => null),
+            apiClient.get(`/client-documents/${exhibitorId}`).catch(() => null),
+          ]);
+
+          setPassRequests(passRes?.data?.data || []);
+          setPassConfigs(passConfigRes?.data?.data || []);
+          setServiceOrders(orderRes?.data?.data || []);
+
+          const requirements = Array.isArray(reqRes?.data) ? reqRes.data : reqRes?.data?.data || [];
+          const uploadedDocs = Array.isArray(docsRes?.data) ? docsRes.data : docsRes?.data?.data || [];
+          const uploadedMap = new Map<string, any>(uploadedDocs.map((doc: any) => [doc.document_name, doc]));
+          setEventDocs(requirements.map((doc: any) => {
+            const uploaded = uploadedMap.get(doc.document_name);
+            return {
+              id: uploaded?._id || doc._id || doc.id,
+              title: doc.document_name,
+              status: uploaded?.status || 'Pending Upload',
+              size: uploaded?.size || '-',
+              fileUrl: uploaded?.file_url,
+            };
+          }));
+        }
       }
     } catch (err) {
       console.log('Error fetching data for MyEvent', err);
@@ -71,6 +130,72 @@ export default function MyEventTab() {
   );
   const status = data?.status || 'Pending';
   const passId = `IHWE-2026-${contactPerson.replace(/\s/g, '').substring(0, 4).toUpperCase()}8X`;
+  const eventStartDate = data?.eventId?.startDate || '';
+  const eventEndDate = data?.eventId?.endDate;
+  const approvedPassCount = passRequests
+    .filter((request) => request.status === 'approved')
+    .reduce((sum, request) => sum + Number(request.quantity || 0), 0);
+  const pendingPassCount = passRequests
+    .filter((request) => request.status === 'pending')
+    .reduce((sum, request) => sum + Number(request.quantity || 0), 0);
+  const rejectedPassCount = passRequests
+    .filter((request) => request.status === 'rejected')
+    .reduce((sum, request) => sum + Number(request.quantity || 0), 0);
+  const complimentaryPassCount = passConfigs.reduce((sum, config) => sum + Number(config.complimentaryQuota || 0), 0);
+  const approvedDocCount = eventDocs.filter((doc) => doc.status === 'Approved').length;
+  const rejectedDocCount = eventDocs.filter((doc) => doc.status === 'Rejected').length;
+  const pendingDocCount = eventDocs.filter((doc) => doc.status !== 'Approved' && doc.status !== 'Rejected').length;
+  const paymentCompleted = ['paid', 'advance-paid', 'confirmed', 'approved'].some((paidStatus) =>
+    String(data?.status || '').toLowerCase().includes(paidStatus)
+  );
+  const eventDateLabel = formatEventDateLabel(eventStartDate, eventEndDate);
+  const setupLabel = formatOffsetDateLabel(eventStartDate, -2, eventStartDate, -1);
+  const dismantleLabel = formatOffsetDateLabel(eventEndDate || eventStartDate, 0);
+  const latestOrders = serviceOrders.slice(0, 6);
+  const taskItems = [
+    {
+      icon: '01',
+      title: 'Complete Stall Information',
+      desc: stallNumber !== 'TBA' ? `${stallNumber} assigned in ${hallLabel}` : 'Stall assignment is pending',
+      status: stallNumber !== 'TBA' ? 'Completed' : 'Pending',
+      route: '/(tabs)/stall-information',
+    },
+    {
+      icon: '02',
+      title: 'Upload Required Documents',
+      desc: `${approvedDocCount}/${eventDocs.length || 0} approved, ${pendingDocCount} pending`,
+      status: rejectedDocCount > 0 ? 'Rejected' : eventDocs.length > 0 && pendingDocCount === 0 ? 'Completed' : 'Pending',
+      route: '/(tabs)/document-center',
+    },
+    {
+      icon: '03',
+      title: 'Make Payment',
+      desc: paymentCompleted ? 'Payment status is updated' : 'Complete pending stall payment',
+      status: paymentCompleted ? 'Completed' : 'Pending',
+      route: '/(tabs)/make-payment',
+    },
+    {
+      icon: '04',
+      title: 'Book Add On Services',
+      desc: serviceOrders.length > 0 ? `${serviceOrders.length} service order${serviceOrders.length > 1 ? 's' : ''} found` : 'No add-on service order yet',
+      status: serviceOrders.length > 0 ? 'Completed' : 'Pending',
+      route: '/(tabs)/add-on-services',
+    },
+    {
+      icon: '05',
+      title: 'Manage Pass Requests',
+      desc: `${approvedPassCount} approved, ${pendingPassCount} pending`,
+      status: pendingPassCount > 0 ? 'In Progress' : approvedPassCount > 0 ? 'Completed' : 'Pending',
+      route: '/(tabs)/passes-and-hospitality',
+    },
+    {
+      icon: '06',
+      title: 'Invite Team Members',
+      desc: `${data?.teamMembers?.length || 0} registered`,
+      status: data?.teamMembers?.length > 0 ? 'Completed' : 'Pending',
+      route: '/(tabs)/team-members',
+    },
+  ];
 
   return (
     <View className="flex-1 bg-[#f4f7f9]">
@@ -108,7 +233,7 @@ export default function MyEventTab() {
         <View className="px-5 -mt-10 z-20">
 
           {/* 2. Event Countdown Timer */}
-          <EventTimer targetDate="2026-08-21T09:00:00" />
+          <EventTimer targetDate={eventStartDate} />
 
           {/* Tab Switcher */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-1 mt-1">
@@ -130,7 +255,9 @@ export default function MyEventTab() {
                   <View className="absolute right-[-20px] top-[-20px] w-32 h-32 rounded-full border-[8px] border-white/5" />
                   <View>
                     <Text className="text-white font-black text-[18px] tracking-tight">EXHIBITOR PASS</Text>
-                    <Text className="text-[#a3e635] font-bold text-[9px] uppercase tracking-widest mt-0.5">VIP All Access</Text>
+                    <Text className="text-[#a3e635] font-bold text-[9px] uppercase tracking-widest mt-0.5">
+                      {approvedPassCount > 0 ? `${approvedPassCount} Approved` : pendingPassCount > 0 ? `${pendingPassCount} Pending` : 'No Approved Pass Yet'}
+                    </Text>
                   </View>
                   <View className="w-10 h-10 bg-white/10 rounded-full items-center justify-center backdrop-blur-md border border-white/20">
                     <Store size={18} color="#ffffff" />
@@ -175,9 +302,18 @@ export default function MyEventTab() {
                   </View>
                 </View>
 
-                <TouchableOpacity className="bg-blue-600 py-3 flex-row justify-center items-center">
-                  <Download size={16} color="#ffffff" />
-                  <Text className="text-white font-black text-[13px] ml-2 tracking-wide">Download E-Badge</Text>
+                <View className="px-5 pb-4">
+                  <View className="flex-row justify-between mb-3">
+                    <PassStat label="Included" value={complimentaryPassCount || '-'} />
+                    <PassStat label="Approved" value={approvedPassCount} />
+                    <PassStat label="Pending" value={pendingPassCount} />
+                    <PassStat label="Rejected" value={rejectedPassCount} />
+                  </View>
+                </View>
+
+                <TouchableOpacity onPress={() => router.push('/(tabs)/passes-and-hospitality')} className="bg-blue-600 py-3 flex-row justify-center items-center">
+                  <Ticket size={16} color="#ffffff" />
+                  <Text className="text-white font-black text-[13px] ml-2 tracking-wide">Manage Passes</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -196,18 +332,17 @@ export default function MyEventTab() {
                 <View className="bg-white rounded-[20px] p-4 shadow-sm border border-slate-100 mb-2 flex-row justify-between items-center">
                   <View className="items-center flex-1 border-r border-slate-100">
                     <Text className="text-slate-400 font-bold uppercase text-[9px] tracking-widest mb-1">Setup</Text>
-                    <Text className="text-[#0f172a] font-black text-[15px]">19–20</Text>
-                    <Text className="text-slate-500 font-bold text-[10px]">Aug</Text>
+                    <Text className="text-[#0f172a] font-black text-[14px] text-center">{setupLabel}</Text>
+
                   </View>
                   <View className="items-center flex-1 border-r border-slate-100">
                     <Text className="text-blue-600 font-bold uppercase text-[9px] tracking-widest mb-1">Event</Text>
-                    <Text className="text-blue-700 font-black text-[17px]">21–23</Text>
-                    <Text className="text-blue-500 font-bold text-[10px]">Aug</Text>
+                    <Text className="text-blue-700 font-black text-[14px] text-center">{eventDateLabel}</Text>
                   </View>
                   <View className="items-center flex-1">
                     <Text className="text-slate-400 font-bold uppercase text-[9px] tracking-widest mb-1">Dismantle</Text>
-                    <Text className="text-[#0f172a] font-black text-[15px]">23</Text>
-                    <Text className="text-slate-500 font-bold text-[10px]">Aug</Text>
+                    <Text className="text-[#0f172a] font-black text-[14px] text-center">{dismantleLabel}</Text>
+
                   </View>
                 </View>
               </View>
@@ -244,66 +379,71 @@ export default function MyEventTab() {
             <View>
               <SectionHeader title="My Event Checklist" actionText="" />
               <View className="bg-white rounded-[24px] shadow-sm border border-slate-200 p-2 mb-2 mx-1">
-                <ChecklistItem
-                  icon="🏪"
-                  title="Complete Stall Information"
-                  desc="Provide your stall details and specifications"
-                  status="Completed"
-                />
-                <ChecklistItem
-                  icon="📄"
-                  title="Upload Required Documents"
-                  desc="Submit all mandatory documents"
-                  status={data?.documentStatus === 'verified' ? 'Completed' : 'Pending'}
-                />
-                <ChecklistItem
-                  icon="💳"
-                  title="Make Payment"
-                  desc="Complete your payment to confirm participation"
-                  status={data?.status?.includes('paid') ? 'Completed' : 'Pending'}
-                />
-                <ChecklistItem
-                  icon="🛍️"
-                  title="Book Add On Services"
-                  desc="Enhance your presence with additional services"
-                  status="In Progress"
-                />
-                <ChecklistItem
-                  icon="👥"
-                  title="Invite Team Members"
-                  desc="Add your team to manage the event together"
-                  status={data?.teamMembers?.length > 0 ? 'Completed' : 'Pending'}
-                  isLast
-                />
+                {taskItems.map((task, index) => (
+                  <ChecklistItem
+                    key={task.title}
+                    icon={task.icon}
+                    title={task.title}
+                    desc={task.desc}
+                    status={task.status}
+                    route={task.route}
+                    isLast={index === taskItems.length - 1}
+                  />
+                ))}
               </View>
             </View>
           )}
-
           {activeTab === 'Services' && (
             <View>
-              <SectionHeader title="My Bookings & Services" actionText="" />
-              <View className="flex-row flex-wrap justify-between pl-1">
-                <ServiceCard icon="🏪" title="Stall Booking" status="Confirmed" />
-                <ServiceCard icon="⚡" title="Electricity" status="Confirmed" />
-                <ServiceCard icon="🪑" title="Furniture" status="In Progress" />
-                <ServiceCard icon="🎨" title="Branding" status="Confirmed" />
-                <ServiceCard icon="🧑‍💼" title="Hostesses" status="Not Booked" />
-                <ServiceCard icon="🅿️" title="Parking" status="Not Booked" />
-              </View>
+              <SectionHeader title="My Bookings & Services" actionText="Add More" onPress={() => router.push('/(tabs)/add-on-services')} />
+              {latestOrders.length > 0 ? (
+                <View className="flex-row flex-wrap justify-between pl-1">
+                  {latestOrders.map((order) => (
+                    <ServiceCard
+                      key={order._id || order.orderNo}
+                      icon="ORD"
+                      title={order.orderNo || 'Service Order'}
+                      subtitle={(order.items || []).map((item: any) => item.name).filter(Boolean).slice(0, 2).join(', ') || 'Add-on services'}
+                      status={order.paymentStatus === 'paid' || order.paymentStatus === 'complimentary' ? 'Confirmed' : 'Pending'}
+                    />
+                  ))}
+                </View>
+              ) : (
+                <EmptyState
+                  title="No add-on services booked"
+                  desc="Book extra furniture, power, branding, manpower or hospitality from Add On Services."
+                  action="Browse Services"
+                  onPress={() => router.push('/(tabs)/add-on-services')}
+                />
+              )}
             </View>
           )}
-
           {activeTab === 'Docs' && (
             <View>
-              <SectionHeader title="Event Documents" actionText="" />
-              <View className="mb-2 mx-1">
-                <DocumentCard title="Exhibitor Manual" size="PDF (2.4 MB)" />
-                <DocumentCard title="Venue Map" size="PDF (1.8 MB)" />
-                <DocumentCard title="Move-in / Move-out Guidelines" size="PDF (1.2 MB)" isLast />
-              </View>
+              <SectionHeader title="Required Documents" actionText="Manage" onPress={() => router.push('/(tabs)/document-center')} />
+              {eventDocs.length > 0 ? (
+                <View className="mb-2 mx-1">
+                  {eventDocs.slice(0, 6).map((doc, index) => (
+                    <DocumentCard
+                      key={doc.id || doc.title}
+                      title={doc.title}
+                      size={doc.size || '-'}
+                      status={doc.status}
+                      onPress={() => router.push('/(tabs)/document-center')}
+                      isLast={index === Math.min(eventDocs.length, 6) - 1}
+                    />
+                  ))}
+                </View>
+              ) : (
+                <EmptyState
+                  title="No document requirements found"
+                  desc="Document configuration is not available yet."
+                  action="Open Document Center"
+                  onPress={() => router.push('/(tabs)/document-center')}
+                />
+              )}
             </View>
           )}
-
         </View>
       </ScrollView>
     </View>
@@ -370,12 +510,12 @@ function InfoCard({ title, value, subtitle, icon }: { title: string, value: stri
   );
 }
 
-function SectionHeader({ title, actionText }: { title: string, actionText: string }) {
+function SectionHeader({ title, actionText, onPress }: { title: string, actionText: string, onPress?: () => void }) {
   return (
     <View className="flex-row justify-between items-end mb-2 ml-1 mr-1">
       <Text className="text-[#1a3a7c] font-black text-[17px] tracking-tight">{title}</Text>
       {actionText ? (
-        <TouchableOpacity>
+        <TouchableOpacity onPress={onPress}>
           <Text className="text-[#2563eb] font-bold text-[12px]">{actionText}</Text>
         </TouchableOpacity>
       ) : null}
@@ -383,10 +523,11 @@ function SectionHeader({ title, actionText }: { title: string, actionText: strin
   );
 }
 
-function ChecklistItem({ icon, title, desc, status, isLast = false }: { icon: string, title: string, desc: string, status: string, isLast?: boolean }) {
+function ChecklistItem({ icon, title, desc, status, route, isLast = false }: { icon: string, title: string, desc: string, status: string, route?: any, isLast?: boolean }) {
   const getStatusColor = () => {
     if (status === 'Completed') return 'text-green-600 bg-green-50';
     if (status === 'In Progress') return 'text-orange-600 bg-orange-50';
+    if (status === 'Rejected') return 'text-red-600 bg-red-50';
     return 'text-slate-500 bg-slate-100';
   };
 
@@ -396,7 +537,7 @@ function ChecklistItem({ icon, title, desc, status, isLast = false }: { icon: st
   };
 
   return (
-    <TouchableOpacity className={`flex-row p-3 items-center ${!isLast ? 'border-b border-slate-100' : ''}`}>
+    <TouchableOpacity onPress={() => route && router.push(route)} className={`flex-row p-3 items-center ${!isLast ? 'border-b border-slate-100' : ''}`}>
       <View className="w-10 h-10 bg-slate-50 rounded-xl items-center justify-center mr-4">
         <Text className="text-[20px]">{icon}</Text>
       </View>
@@ -414,14 +555,15 @@ function ChecklistItem({ icon, title, desc, status, isLast = false }: { icon: st
   );
 }
 
-function ServiceCard({ icon, title, status }: { icon: string, title: string, status: string }) {
+function ServiceCard({ icon, title, subtitle, status }: { icon: string, title: string, subtitle?: string, status: string }) {
   const isConfirmed = status === 'Confirmed';
   const isInProgress = status === 'In Progress';
 
   return (
     <View className="bg-white rounded-[20px] p-3 shadow-sm border border-slate-100 mb-1.5 w-[48%]">
       <Text className="text-[24px] mb-1.5">{icon}</Text>
-      <Text className="text-[#0f172a] font-black text-[14px] mb-2">{title}</Text>
+      <Text className="text-[#0f172a] font-black text-[14px] mb-1">{title}</Text>
+      {subtitle ? <Text className="text-slate-500 font-medium text-[10px] mb-2" numberOfLines={2}>{subtitle}</Text> : null}
       <Text className={`font-bold text-[10px] uppercase tracking-wider ${isConfirmed ? 'text-green-600' : isInProgress ? 'text-orange-600' : 'text-slate-400'}`}>
         {status}
       </Text>
@@ -429,15 +571,15 @@ function ServiceCard({ icon, title, status }: { icon: string, title: string, sta
   );
 }
 
-function DocumentCard({ title, size, isLast = false }: { title: string, size: string, isLast?: boolean }) {
+function DocumentCard({ title, size, status, onPress, isLast = false }: { title: string, size: string, status?: string, onPress?: () => void, isLast?: boolean }) {
   return (
-    <TouchableOpacity className={`bg-white p-3 flex-row items-center shadow-sm border border-slate-200 ${isLast ? 'rounded-[20px]' : 'rounded-[20px] mb-1.5'}`}>
+    <TouchableOpacity onPress={onPress} className={`bg-white p-3 flex-row items-center shadow-sm border border-slate-200 ${isLast ? 'rounded-[20px]' : 'rounded-[20px] mb-1.5'}`}>
       <View className="w-10 h-10 bg-red-50 rounded-xl items-center justify-center mr-3">
         <Text className="text-red-500 font-black text-[10px] uppercase tracking-widest">PDF</Text>
       </View>
       <View className="flex-1">
         <Text className="text-[#0f172a] font-black text-[14px]">{title}</Text>
-        <Text className="text-slate-500 font-medium text-[11px] mt-0.5">{size}</Text>
+        <Text className="text-slate-500 font-medium text-[11px] mt-0.5">{size} - {status || 'Pending Upload'}</Text>
       </View>
       <View className="w-8 h-8 bg-[#f8fafc] rounded-full items-center justify-center border border-slate-200">
         <Download size={14} color="#64748b" />
@@ -445,4 +587,26 @@ function DocumentCard({ title, size, isLast = false }: { title: string, size: st
     </TouchableOpacity>
   );
 }
+
+function PassStat({ label, value }: { label: string, value: string | number }) {
+  return (
+    <View className="items-center flex-1">
+      <Text className="text-[#1a3a7c] font-black text-[16px]">{value}</Text>
+      <Text className="text-slate-400 font-bold text-[8px] uppercase tracking-widest mt-0.5">{label}</Text>
+    </View>
+  );
+}
+
+function EmptyState({ title, desc, action, onPress }: { title: string, desc: string, action: string, onPress: () => void }) {
+  return (
+    <View className="bg-white rounded-[24px] shadow-sm border border-slate-200 p-5 mx-1 mb-2 items-center">
+      <Text className="text-[#0f172a] font-black text-[15px] text-center">{title}</Text>
+      <Text className="text-slate-500 font-medium text-[12px] text-center mt-2 leading-5">{desc}</Text>
+      <TouchableOpacity onPress={onPress} className="bg-[#1a3a7c] rounded-full px-5 py-2.5 mt-4">
+        <Text className="text-white font-black text-[11px] uppercase tracking-widest">{action}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 
