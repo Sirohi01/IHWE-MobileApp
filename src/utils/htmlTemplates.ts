@@ -45,6 +45,7 @@ export const generateInvoiceHtml = (data: any, type: string, headerImgUrl: strin
 
     const company = data.company || {};
     const c1 = company?.contacts?.[0] || {};
+    const clientContactPerson = c1.firstName ? `${c1.firstName} ${c1.surname || ''}`.trim() : '—';
 
     // Fallback data mapping based on API response
     const invoiceNo = isEstimate ? doc?.est_no : isReceipt ? (doc?.cash_receipt_no || doc?._id) : doc?.inv_no;
@@ -122,7 +123,7 @@ export const generateInvoiceHtml = (data: any, type: string, headerImgUrl: strin
                             <div style="margin-top: 2px; text-transform: capitalize;">${clientCompanyAddress}</div>
                             <table class="no-border" style="width: 100%; margin-top: 4px;">
                                 <tbody>
-                                    <tr><td style="width: 1%; white-space: nowrap;">Contact Person</td><td style="width: 1%;">:</td><td>${c1.name || '—'}</td></tr>
+                                    <tr><td style="width: 1%; white-space: nowrap;">Contact Person</td><td style="width: 1%;">:</td><td>${clientContactPerson}</td></tr>
                                     <tr><td style="width: 1%; white-space: nowrap;">Contact No.</td><td style="width: 1%;">:</td><td>${c1.mobile || '—'}</td></tr>
                                     <tr><td style="width: 1%; white-space: nowrap;">Email</td><td style="width: 1%;">:</td><td>${c1.email || '—'}</td></tr>
                                     <tr><td style="width: 1%; white-space: nowrap;">GSTIN.</td><td style="width: 1%;">:</td><td>${clientGstNo || '—'}</td></tr>
@@ -134,8 +135,8 @@ export const generateInvoiceHtml = (data: any, type: string, headerImgUrl: strin
                             <div style="margin-top: 2px;">${eventPlaceOfSupply}</div>
                             <table class="no-border" style="width: 100%; margin-top: 4px;">
                                 <tbody>
-                                    <tr><td style="width: 1%; white-space: nowrap;">Contact Person</td><td style="width: 1%;">:</td><td>${c1.name || '—'}</td></tr>
-                                    <tr><td style="width: 1%; white-space: nowrap;">Contact No.</td><td style="width: 1%;">:</td><td>${c1.mobile || '—'}</td></tr>
+                                    <tr><td style="width: 1%; white-space: nowrap;">Contact Person</td><td style="width: 1%;">:</td><td>${doc?.consignee_person || doc?.consignee_name || '—'}</td></tr>
+                                    <tr><td style="width: 1%; white-space: nowrap;">Contact No.</td><td style="width: 1%;">:</td><td>${doc?.consignee_phone || '—'}</td></tr>
                                     <tr><td style="width: 1%; white-space: nowrap;">GSTIN.</td><td style="width: 1%;">:</td><td>${eventGstNo}</td></tr>
                                 </tbody>
                             </table>
