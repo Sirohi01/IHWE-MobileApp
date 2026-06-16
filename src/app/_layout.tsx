@@ -18,7 +18,7 @@ export default function RootLayout() {
   const appState = useRef(AppState.currentState);
   const lastAlertedId = useRef<string | null>(null);
 
-  const player = useVideoPlayer(require('../../assets/video/ihweVideo1.mp4'), p => {
+  const player = useVideoPlayer(require('../../assets/video/ihweVideo2.mp4'), p => {
     p.loop = false;
     p.play();
   });
@@ -29,7 +29,7 @@ export default function RootLayout() {
     });
     const playingChangeSub = player.addListener('playingChange', (isPlaying) => {
       if (isPlaying) {
-        SplashScreen.hideAsync().catch(() => {});
+        SplashScreen.hideAsync().catch(() => { });
       }
     });
 

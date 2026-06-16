@@ -69,11 +69,15 @@ export default function StallInformationScreen() {
   const industrySector = data?.industrySector || 'Healthcare';
 
   const primaryContactName = [
-    data?.contact1?.title,
     data?.contact1?.firstName,
     data?.contact1?.lastName,
   ].filter(Boolean).join(' ').trim();
-  const contactPerson = data?.contactPerson || primaryContactName || data?.contact1?.name || 'Delegate Name';
+
+  let contactPerson = data?.contactPerson || primaryContactName || data?.contact1?.name || 'Delegate Name';
+  if (typeof contactPerson === 'string') {
+    contactPerson = contactPerson.replace(/^(Mr|Mrs|Ms|Dr|Prof)\.?\s+(?:Mr|Mrs|Ms|Dr|Prof)\.?\s+/i, '$1. ');
+  }
+
   const teamMembersCount = data?.teamMembers?.length || 0;
 
   const isDocVerified = data?.documentStatus === 'verified';
@@ -112,11 +116,6 @@ export default function StallInformationScreen() {
               <Map size={12} color="white" />
               <Text className="text-white font-bold text-[10px] ml-1.5 uppercase tracking-wider">Floor Plan</Text>
             </TouchableOpacity>
-            <View className="bg-blue-50 px-3 py-1 rounded-full border border-blue-100 flex-row items-center max-w-[120px]">
-              {/* @ts-ignore */}
-              <Tag size={10} color="#2563eb" />
-              <Text className="text-blue-700 font-bold text-[10px] ml-1.5 uppercase tracking-widest" numberOfLines={1}>{industrySector}</Text>
-            </View>
           </View>
         </View>
       </View>

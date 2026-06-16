@@ -56,7 +56,11 @@ const hasContactData = (contact?: ContactPerson) => {
 
 const contactName = (contact?: ContactPerson) => {
   if (!contact) return '';
-  return [contact.title, contact.firstName, contact.lastName].filter(Boolean).join(' ').trim();
+  let name = [contact.firstName, contact.lastName].filter(Boolean).join(' ').trim();
+  if (typeof name === 'string') {
+    name = name.replace(/^(Mr|Mrs|Ms|Dr|Prof)\.?\s+(?:Mr|Mrs|Ms|Dr|Prof)\.?\s+/i, '$1. ');
+  }
+  return name;
 };
 
 const contactToMember = (contact: ContactPerson | undefined, source: 'contact1' | 'contact2'): DisplayMember => ({
