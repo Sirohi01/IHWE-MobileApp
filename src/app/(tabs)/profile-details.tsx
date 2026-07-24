@@ -115,6 +115,15 @@ export default function ProfileDetailsScreen() {
     }
 
     const logoUrl = getMediaUrl(profile.companyLogoUrl || profile.companyLogo);
+    const primaryTeamMember = Array.isArray(profile.teamMembers)
+        ? profile.teamMembers.find((member: any) => member?.isPrimary)
+        : null;
+    const primaryContactName = primaryTeamMember?.name || [
+        profile.contact1?.firstName,
+        profile.contact1?.lastName
+    ].filter(Boolean).join(' ').trim();
+    const primaryEmail = primaryTeamMember?.email || profile.contact1?.email || profile.email || '';
+    const primaryMobile = primaryTeamMember?.mobile || profile.contact1?.mobile || profile.mobile || '';
 
     return (
         <View className="flex-1 bg-[#f4f7f9]">
@@ -167,7 +176,7 @@ export default function ProfileDetailsScreen() {
                         <View className="flex-1">
                             <Text className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Primary Contact</Text>
                             <Text className="text-[14px] font-black text-slate-800">
-                                {profile.contact1 ? `${profile.contact1.firstName || ''} ${profile.contact1.lastName || ''}`.trim() : 'N/A'}
+                                {primaryContactName || 'N/A'}
                             </Text>
                         </View>
                     </View>
@@ -178,7 +187,7 @@ export default function ProfileDetailsScreen() {
                         </View>
                         <View className="flex-1">
                             <Text className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Email Address</Text>
-                            <Text className="text-[14px] font-black text-slate-800">{profile.contact1?.email || profile.email || 'N/A'}</Text>
+                            <Text className="text-[14px] font-black text-slate-800">{primaryEmail || 'N/A'}</Text>
                         </View>
                     </View>
                     <View className="w-full h-[1px] bg-slate-100 mb-4" />
@@ -188,7 +197,7 @@ export default function ProfileDetailsScreen() {
                         </View>
                         <View className="flex-1">
                             <Text className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Mobile Number</Text>
-                            <Text className="text-[14px] font-black text-slate-800">+91 {profile.contact1?.mobile || profile.mobile || 'N/A'}</Text>
+                            <Text className="text-[14px] font-black text-slate-800">{primaryMobile ? `+91 ${primaryMobile}` : 'N/A'}</Text>
                         </View>
                     </View>
                 </View>

@@ -68,7 +68,10 @@ export default function StallInformationScreen() {
   const exhibitorName = data?.exhibitorName || 'Company Name';
   const industrySector = data?.industrySector || 'Healthcare';
 
-  const primaryContactName = [
+  const primaryTeamMember = Array.isArray(data?.teamMembers)
+    ? data.teamMembers.find((member: any) => member?.isPrimary)
+    : null;
+  const primaryContactName = primaryTeamMember?.name || [
     data?.contact1?.firstName,
     data?.contact1?.lastName,
   ].filter(Boolean).join(' ').trim();
