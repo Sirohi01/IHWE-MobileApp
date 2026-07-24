@@ -349,7 +349,7 @@ export default function MoreMenuScreen() {
           <MenuItem
             icon={FileText}
             title="Document Center"
-            subtitle="Manage MSME and general documents"
+            subtitle="Manage event documents"
             iconBg="#e0f2fe" iconColor="#0ea5e9"
             onPress={() => router.push('/(tabs)/document-center')}
             disabled={false}
@@ -370,10 +370,10 @@ export default function MoreMenuScreen() {
           />
           <MenuItem
             icon={FolderOpen}
-            title="MSME Documentation"
-            subtitle="View & update your Udyam details"
+            title="MSME PMS Scheme"
+            subtitle="Apply for MSME subsidy & claim"
             iconBg="#e0e7ff" iconColor="#4f46e5"
-            onPress={() => router.push('/(tabs)/msme-documentation')}
+            onPress={() => router.push('/msme-application')}
           />
         </View>
 

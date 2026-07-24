@@ -195,6 +195,13 @@ export default function MyEventTab() {
       status: data?.teamMembers?.length > 0 ? 'Completed' : 'Pending',
       route: '/(tabs)/team-members',
     },
+    {
+      icon: '07',
+      title: 'Apply for MSME Subsidy',
+      desc: 'Submit PMS documentation',
+      status: 'Pending',
+      route: '/msme-application',
+    },
   ];
 
   return (

@@ -82,7 +82,9 @@ export default function DocumentCenterScreen() {
           docsData.forEach((d: any) => uploadedMap.set(d.document_name, d));
         }
 
-        const formatted = reqData.map((d: any) => {
+        const formatted = reqData
+          .filter((d: any) => d.category !== "MSME Related Documents")
+          .map((d: any) => {
           const uploaded = uploadedMap.get(d.document_name);
           return {
             id: uploaded?._id || d._id || d.id,
@@ -90,7 +92,7 @@ export default function DocumentCenterScreen() {
             type: uploaded?.file_type || "PDF",
             size: uploaded?.size || "-",
             date: uploaded ? new Date(uploaded.updated).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "-",
-            category: (d.category === "MSME Related Documents" ? "MSME Related" : "General Documents") as DocCategory,
+            category: "General Documents" as DocCategory,
             status: (uploaded?.status === "Approved" ? "Approved" : uploaded?.status === "Rejected" ? "Rejected" : uploaded?.status === "Pending" ? "Under Review" : "Pending Upload") as DocStatus,
             uploadedBy: uploaded?.uploaded_by || "-",
             uploadDate: uploaded ? new Date(uploaded.added).toLocaleString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : "-",
@@ -220,7 +222,7 @@ export default function DocumentCenterScreen() {
           </TouchableOpacity>
           <View>
             <Text className="text-[#0f172a] font-black text-[18px] tracking-tight">Document Center</Text>
-            <Text className="text-slate-500 font-medium text-[11px]">Manage MSME & General Documents</Text>
+            <Text className="text-slate-500 font-medium text-[11px]">Manage General Documents</Text>
           </View>
         </View>
       </View>
@@ -240,50 +242,24 @@ export default function DocumentCenterScreen() {
             <StatCard title="Rejected" count={rejectedCount} icon={XCircle} color="#dc2626" bg="#fee2e2" />
           </ScrollView>
 
-          {/* Tabs */}
-          <View className="px-5 mt-2 mb-3">
-            <View className="flex-row bg-slate-200/60 p-1 rounded-xl">
-              {["All Documents", "MSME Related", "General Documents"].map((tab) => {
-                const isActive = activeTab === tab;
-                return (
-                  <TouchableOpacity
-                    key={tab}
-                    onPress={() => setActiveTab(tab)}
-                    style={[
-                      { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 8 },
-                      isActive ? { backgroundColor: 'white', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 } : { backgroundColor: 'transparent' }
-                    ]}
-                  >
-                    <Text style={[
-                      { fontSize: 11, fontWeight: 'bold' },
-                      isActive ? { color: '#0f172a' } : { color: '#64748b' }
-                    ]}>
-                      {tab.replace(' Documents', '').replace(' Related', '')}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* List */}
-          <View className="px-5">
-            {filteredDocs.length === 0 ? (
+          {/* Document List */}
+          <View className="px-5 mt-4">
+            {docs.length === 0 ? (
               <View className="items-center justify-center bg-white p-8 rounded-2xl border border-slate-100">
                 {/* @ts-ignore */}
                 <FileText size={48} color="#cbd5e1" style={{ marginBottom: 16 }} />
                 <Text className="text-slate-400 font-bold">No documents found</Text>
               </View>
             ) : (
-              filteredDocs.map((doc, idx) => {
+              docs.map((doc, idx) => {
                 const conf = StatusConfig[doc.status];
                 return (
                   <View key={doc.id || idx} className="bg-white p-4 rounded-2xl mb-3 shadow-sm flex-col" style={{ shadowColor: '#94a3b8', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2 }}>
                     <View className="flex-row justify-between items-start mb-3">
                       <View className="flex-1 pr-4 flex-row items-start">
-                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3`} style={{ backgroundColor: doc.category === 'MSME Related' ? '#eff6ff' : '#f5f3ff' }}>
+                        <View className="w-10 h-10 rounded-xl items-center justify-center mr-3 bg-[#f5f3ff]">
                           {/* @ts-ignore */}
-                          <FileText size={18} color={doc.category === 'MSME Related' ? '#3b82f6' : '#8b5cf6'} />
+                          <FileText size={18} color="#8b5cf6" />
                         </View>
                         <View className="flex-1">
                           <Text className="text-[#0f172a] font-black text-[14px] leading-snug tracking-tight mb-1">{doc.title}</Text>
