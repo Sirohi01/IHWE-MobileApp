@@ -165,6 +165,15 @@ export default function ScannerScreen() {
     setManualInput('');
   };
 
+  const detailLabel = (key: string) => key
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, value => value.toUpperCase());
+
+  const visibleProfileDetails = scannedData?.profileDetails
+    ? Object.entries(scannedData.profileDetails).filter(([, value]) =>
+        Array.isArray(value) ? value.length > 0 : value !== '' && value !== null && value !== undefined)
+    : [];
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }} edges={['top']}>
       <View className="flex-row items-center justify-between px-5 py-4 z-20 absolute top-10 w-full">
@@ -278,6 +287,19 @@ export default function ScannerScreen() {
                     {scannedData.isOffline ? 'Offline Scan Captured' : 'Successfully Scanned'}
                   </Text>
                 </View>
+                {!scannedData.isOffline && (
+                  <View className={`self-start px-2.5 py-1 rounded border mb-2 ${scannedData.sourceType === 'buyer' ? 'bg-blue-50 border-blue-200' : 'bg-slate-100 border-slate-200'}`}>
+                    <Text className={`text-[9px] font-black uppercase tracking-wider ${scannedData.sourceType === 'buyer' ? 'text-blue-700' : 'text-slate-600'}`}>
+                      {scannedData.sourceType === 'buyer'
+                        ? `${scannedData.buyerKind || 'Registered'} buyer | Buyer-Seller Meet eligible`
+                        : scannedData.sourceType === 'exhibitor_pass'
+                          ? 'Exhibitor pass | Stall lookup'
+                          : scannedData.sourceType === 'exhibitor'
+                            ? 'Exhibitor | Stall lookup'
+                            : `${scannedData.sourceType || 'visitor'} lead`}
+                    </Text>
+                  </View>
+                )}
                 <Text className="text-2xl font-black text-slate-800 tracking-tight">{scannedData.name || scannedData.company || 'Scanned Lead'}</Text>
                 {scannedData.designation && <Text className="text-[#1a3a7c] font-bold text-[15px]">{scannedData.designation}</Text>}
               </View>
@@ -307,10 +329,59 @@ export default function ScannerScreen() {
                 <Mail size={16} color="#64748b" className="mr-3" />
                 <Text className="text-slate-700 font-medium">{scannedData.email || 'Email not available'}</Text>
               </View>
+              {scannedData.registrationId ? (
+                <>
+                  <View className="h-[1px] bg-slate-200 w-full my-4" />
+                  <Text className="text-[11px] text-slate-500 font-bold">Registration ID</Text>
+                  <Text className="text-slate-800 font-black mt-1">{scannedData.registrationId}</Text>
+                </>
+              ) : null}
+              {scannedData.country ? (
+                <>
+                  <View className="h-[1px] bg-slate-200 w-full my-4" />
+                  <Text className="text-[11px] text-slate-500 font-bold">Country</Text>
+                  <Text className="text-slate-800 font-semibold mt-1">{scannedData.country}</Text>
+                </>
+              ) : null}
+              {scannedData.interest ? (
+                <>
+                  <View className="h-[1px] bg-slate-200 w-full my-4" />
+                  <Text className="text-[11px] text-slate-500 font-bold">Business Interest</Text>
+                  <Text className="text-slate-800 font-semibold mt-1">{scannedData.interest}</Text>
+                </>
+              ) : null}
             </View>
 
-            <Text className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Categorize Lead</Text>
-            <View className="flex-row flex-wrap gap-2 mb-5">
+            {visibleProfileDetails.length > 0 && (
+              <View className="mb-5">
+                <Text className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Complete Profile Details</Text>
+                <View className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                  {visibleProfileDetails.map(([key, rawValue], index) => (
+                    <View
+                      key={key}
+                      className={`px-4 py-3 ${index < visibleProfileDetails.length - 1 ? 'border-b border-slate-100' : ''}`}
+                    >
+                      <Text className="text-[10px] font-bold text-slate-400 uppercase">{detailLabel(key)}</Text>
+                      <Text className="text-[13px] font-semibold text-slate-700 mt-1">
+                        {Array.isArray(rawValue) ? rawValue.join(', ') : String(rawValue)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {['exhibitor', 'exhibitor_pass'].includes(scannedData.sourceType) ? (
+              <TouchableOpacity
+                onPress={resetScanner}
+                className="w-full py-4 rounded-xl items-center bg-[#1a3a7c]"
+              >
+                <Text className="text-white font-bold text-[14px]">Done</Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+              <Text className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Categorize Lead</Text>
+              <View className="flex-row flex-wrap gap-2 mb-5">
               {['Hot', 'Warm', 'Cold', 'Uncategorized'].map(temp => {
                 const isSelected = temperature === temp;
                 return (
@@ -325,10 +396,10 @@ export default function ScannerScreen() {
                   </TouchableOpacity>
                 );
               })}
-            </View>
+              </View>
 
-            <Text className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Quick Notes</Text>
-            <TextInput
+              <Text className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Quick Notes</Text>
+              <TextInput
               className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-800 font-medium text-base mb-6 h-24"
               placeholder="Products discussed, follow-up actions..."
               placeholderTextColor="#94a3b8"
@@ -336,9 +407,9 @@ export default function ScannerScreen() {
               textAlignVertical="top"
               value={notes}
               onChangeText={setNotes}
-            />
+              />
 
-            <View className="flex-row gap-3">
+              <View className="flex-row gap-3">
               <TouchableOpacity 
                 onPress={resetScanner}
                 className="flex-1 py-4 rounded-xl items-center border border-slate-200 bg-white"
@@ -352,7 +423,9 @@ export default function ScannerScreen() {
               >
                 <Text className="text-white font-bold text-[14px]">{saving ? 'Saving...' : 'Save Lead'}</Text>
               </TouchableOpacity>
-            </View>
+              </View>
+              </>
+            )}
           </ScrollView>
         </View>
       )}

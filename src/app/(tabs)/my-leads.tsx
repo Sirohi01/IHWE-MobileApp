@@ -280,7 +280,7 @@ export default function MyLeadsScreen() {
   };
 
   const tabs = ['All', 'Hot', 'Warm', 'Cold', 'Uncategorized'];
-  const sourceTabs = ['All', 'Buyer', 'Visitor', 'Unknown'];
+  const sourceTabs = ['All', 'Buyer', 'Visitor'];
 
   return (
     <SafeAreaView className="flex-1 bg-[#f8fafc]">
