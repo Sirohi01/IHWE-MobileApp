@@ -1,7 +1,7 @@
 import '../../global.css';
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { ChevronLeft, QrCode, Calendar, Clock, AlertCircle, CheckSquare2, Square, TriangleAlert } from 'lucide-react-native';
+import { ChevronLeft, QrCode, Calendar, Clock, AlertCircle, CheckSquare2, Square } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { apiClient } from '@/core/api/axios';
 
@@ -147,15 +147,7 @@ export default function PassUsageActivityScreen() {
                                                         : 'I confirm this pass was scanned correctly'}
                                                 </Text>
                                             </TouchableOpacity>
-                                            <TouchableOpacity
-                                                onPress={() => acknowledge(usage, 'disputed')}
-                                                disabled={updatingId === String(usage._id)}
-                                                className="flex-row items-center justify-center py-2 mt-1"
-                                            >
-                                                {/* @ts-ignore */}
-                                                <TriangleAlert size={14} color="#dc2626" />
-                                                <Text className="text-[10px] font-black text-red-600 ml-1.5">Report incorrect entry</Text>
-                                            </TouchableOpacity>
+                                            {/* Report incorrect entry is temporarily disabled. */}
                                         </View>
                                     )}
 
