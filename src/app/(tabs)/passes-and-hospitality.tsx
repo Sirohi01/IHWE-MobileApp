@@ -7,6 +7,7 @@ import { apiClient } from '@/core/api/axios';
 export default function PassesAndHospitalityScreen() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedPass, setSelectedPass] = useState<any>(null);
+    const router = useRouter();
     
     // Dynamic Form State
     const [quantity, setQuantity] = useState(1);
@@ -16,6 +17,7 @@ export default function PassesAndHospitalityScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [exhibitorId, setExhibitorId] = useState('');
+    const [exhibitorProfile, setExhibitorProfile] = useState<any>(null);
     const [requests, setRequests] = useState<any[]>([]);
     const [passConfigs, setPassConfigs] = useState<any[]>([]);
     const [passUsages, setPassUsages] = useState<any[]>([]);
@@ -26,6 +28,7 @@ export default function PassesAndHospitalityScreen() {
             const id = dash.data?.data?._id;
             if (!id) return;
             setExhibitorId(id);
+            setExhibitorProfile(dash.data?.data);
             const [res, configRes, usageRes] = await Promise.all([
                 apiClient.get(`/exhibitor-pass-requests/exhibitor/${id}`),
                 apiClient.get('/exhibitor-pass-config/my-active').catch(() => null),
@@ -118,6 +121,60 @@ export default function PassesAndHospitalityScreen() {
                 btn: "bg-blue-100",
                 shadow: "shadow-blue-200"
             }
+        },
+        {
+            id: "lunch",
+            title: "Packed Thali Lunch",
+            subtitle: "Additional Lunch Pass",
+            icon: Building2,
+            complimentary: 0,
+            totalQuota: 10,
+            used: 0,
+            remaining: 0,
+            price: 500,
+            maxPerRequest: 10,
+            theme: { 
+                bg: "bg-pink-50", 
+                text: "text-pink-600", 
+                btn: "bg-pink-100",
+                shadow: "shadow-pink-200"
+            }
+        },
+        {
+            id: "water",
+            title: "Water Bottle",
+            subtitle: "Additional Water Bottle",
+            icon: Ticket,
+            complimentary: 0,
+            totalQuota: 10,
+            used: 0,
+            remaining: 0,
+            price: 20,
+            maxPerRequest: 50,
+            theme: { 
+                bg: "bg-cyan-50", 
+                text: "text-cyan-600", 
+                btn: "bg-cyan-100",
+                shadow: "shadow-cyan-200"
+            }
+        },
+        {
+            id: "delegate",
+            title: "Delegate Pass",
+            subtitle: "For Conference Access",
+            icon: Sparkles,
+            complimentary: 0,
+            totalQuota: 10,
+            used: 0,
+            remaining: 0,
+            price: 500,
+            maxPerRequest: 10,
+            theme: { 
+                bg: "bg-indigo-50", 
+                text: "text-indigo-600", 
+                btn: "bg-indigo-100",
+                shadow: "shadow-indigo-200"
+            }
         }
     ];
 
@@ -126,26 +183,94 @@ export default function PassesAndHospitalityScreen() {
         return acc;
     }, {});
 
+    const countsByType = requests.reduce<Record<string, { pending: number, approved: number, rejected: number, total: number }>>((acc, request) => {
+        const key = request.passType;
+        if (!acc[key]) acc[key] = { pending: 0, approved: 0, rejected: 0, total: 0 };
+        acc[key][request.status as keyof typeof acc[string]] = (acc[key][request.status as keyof typeof acc[string]] || 0) + Number(request.quantity || 0);
+        acc[key].total += Number(request.quantity || 0);
+        return acc;
+    }, {});
+
     const passes = passConfigs.length > 0
-        ? passConfigs.map((config: any) => ({
-            id: config.passType,
-            title: config.title,
-            subtitle: config.subtitle,
-            icon: themeByType[config.passType]?.icon || Ticket,
-            complimentary: Number(config.complimentaryQuota || 0),
-            totalQuota: Number(config.totalQuota || 0),
-            used: 0,
-            remaining: Number(config.complimentaryQuota || 0),
-            price: Number(config.price || 0),
-            maxPerRequest: Number(config.maxPerRequest || 10),
-            theme: themeByType[config.passType]?.theme || fallbackPasses[0].theme
-        }))
+        ? passConfigs.map((config: any) => {
+            const passId = config.passType;
+            if (passId === 'vehicle') {
+                const priceTwoWheeler = Number(config?.vehicleTypeConfig?.twoWheeler?.price || 0);
+                const priceFourWheeler = Number(config?.vehicleTypeConfig?.fourWheeler?.price || 0);
+                const complimentaryTwoWheeler = Number(config?.complimentaryQuotaTwoWheeler ?? config?.vehicleTypeConfig?.twoWheeler?.complimentaryQuota ?? 0);
+                const complimentaryFourWheeler = Number(config?.complimentaryQuotaFourWheeler ?? config?.vehicleTypeConfig?.fourWheeler?.complimentaryQuota ?? 0);
+
+                let usedTwoWheeler = 0, usedFourWheeler = 0;
+                requests
+                    .filter(r => r.passType === 'vehicle' && r.status !== 'rejected')
+                    .forEach(r => (r.vehicles || []).forEach((v: any) => {
+                        if (v.vehicleType === '2-wheeler') usedTwoWheeler += 1; else usedFourWheeler += 1;
+                    }));
+
+                const remainingTwoWheeler = Math.max(complimentaryTwoWheeler - usedTwoWheeler, 0);
+                const remainingFourWheeler = Math.max(complimentaryFourWheeler - usedFourWheeler, 0);
+                const totalQuota = Number(config?.totalQuota ?? 10);
+                const totalRequested = countsByType[passId]?.total ?? 0;
+
+                return {
+                    id: passId,
+                    title: config?.title || 'Vehicle Pass',
+                    subtitle: config?.subtitle || 'For Exhibitor Vehicles',
+                    icon: themeByType[passId]?.icon || Car,
+                    complimentary: complimentaryTwoWheeler + complimentaryFourWheeler,
+                    used: countsByType[passId]?.approved ?? 0,
+                    remaining: Math.max(totalQuota - totalRequested, 0),
+                    complimentaryRemaining: remainingTwoWheeler + remainingFourWheeler,
+                    totalQuota,
+                    price: null,
+                    priceTwoWheeler,
+                    priceFourWheeler,
+                    complimentaryTwoWheeler,
+                    complimentaryFourWheeler,
+                    remainingTwoWheeler,
+                    remainingFourWheeler,
+                    maxPerRequest: Number(config?.maxPerRequest || 10),
+                    theme: themeByType[passId]?.theme || fallbackPasses[1].theme
+                };
+            }
+
+            const complimentary = Number(config.complimentaryQuota || 0);
+            const totalQuota = Number(config.totalQuota || 10);
+            const used = countsByType[passId]?.approved ?? 0;
+            const totalRequested = countsByType[passId]?.total ?? 0;
+            const complimentaryRemaining = Math.max(complimentary - totalRequested, 0);
+
+            return {
+                id: passId,
+                title: config.title,
+                subtitle: config.subtitle,
+                icon: themeByType[passId]?.icon || Ticket,
+                complimentary,
+                totalQuota,
+                used,
+                remaining: Math.max(totalQuota - totalRequested, 0),
+                complimentaryRemaining,
+                price: Number(config.price || 0),
+                maxPerRequest: Number(config.maxPerRequest || 10),
+                theme: themeByType[passId]?.theme || fallbackPasses[0].theme
+            };
+        })
         : fallbackPasses;
 
     const handleOpenModal = (pass: any) => {
         setSelectedPass(pass);
         setQuantity(1);
-        setPersonnel([{ name: '', designation: '', email: '', phone: '', gender: 'male' }]);
+        if (pass.id === 'exhibitor' && exhibitorProfile) {
+            setPersonnel([{ 
+                name: exhibitorProfile.contactPerson || exhibitorProfile.companyName || '', 
+                designation: exhibitorProfile.designation || 'Exhibitor', 
+                email: exhibitorProfile.emailId || '', 
+                phone: exhibitorProfile.mobileNumber || '', 
+                gender: 'male' 
+            }]);
+        } else {
+            setPersonnel([{ name: '', designation: '', email: '', phone: '', gender: 'male' }]);
+        }
         setVehicles([{ vehicleType: '4-wheeler', vehicleNumber: '' }]);
         setIsModalOpen(true);
     };
@@ -211,14 +336,6 @@ export default function PassesAndHospitalityScreen() {
         }
     };
 
-    const countsByType = requests.reduce((acc: any, req) => {
-        const key = req.passType;
-        acc[key] = acc[key] || { pending: 0, approved: 0, rejected: 0, total: 0 };
-        acc[key][req.status] = (acc[key][req.status] || 0) + Number(req.quantity || 0);
-        acc[key].total += Number(req.quantity || 0);
-        return acc;
-    }, {});
-
     const formatUsageTime = (dateString: string) => {
         if (!dateString) return 'N/A';
         const date = new Date(dateString);
@@ -264,7 +381,25 @@ export default function PassesAndHospitalityScreen() {
                     </View>
 
                     <View className="flex-row flex-wrap justify-between">
-                        {passes.map(pass => (
+                        {passes.flatMap(pass => {
+                            if (pass.id === 'vehicle') {
+                                return [
+                                    {
+                                        ...pass,
+                                        id: 'vehicle-2',
+                                        title: '2-Wheeler Pass',
+                                        complimentary: (pass as any).complimentaryTwoWheeler || 0,
+                                    },
+                                    {
+                                        ...pass,
+                                        id: 'vehicle-4',
+                                        title: '4-Wheeler Pass',
+                                        complimentary: (pass as any).complimentaryFourWheeler || 0,
+                                    }
+                                ];
+                            }
+                            return [pass];
+                        }).map(pass => (
                             <View key={pass.id} className="w-[48%] bg-[#f8fafc] p-3 rounded-2xl mb-2 border border-slate-100 relative overflow-hidden">
                                 <View className="absolute right-[-10px] top-[-10px] opacity-[0.03]">
                                     <pass.icon size={80} color="#000" />
@@ -273,7 +408,7 @@ export default function PassesAndHospitalityScreen() {
                                 <View className="mt-3 flex-row items-baseline gap-1">
                                     <Text className={`text-2xl font-black ${pass.theme.text}`}>{pass.complimentary}</Text>
                                     <Text className="text-slate-400 font-bold text-[10px] uppercase">
-                                        {(countsByType[pass.id]?.approved || 0) > 0 ? `${countsByType[pass.id].approved} Approved` : 'Free'}
+                                        {(countsByType[pass.id.split('-')[0]]?.approved || 0) > 0 ? `${countsByType[pass.id.split('-')[0]].approved} Approved` : 'Free'}
                                     </Text>
                                 </View>
                                 <Text className="text-[11px] font-bold text-slate-600 mt-1">{pass.title}</Text>
@@ -307,26 +442,51 @@ export default function PassesAndHospitalityScreen() {
                             </View>
                             <View className="bg-white px-3 py-1.5 rounded-xl shadow-sm border border-slate-100">
                                 <Text className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center mb-0.5">Price</Text>
-                                <Text className="text-[13px] font-black text-slate-800">₹{pass.price}</Text>
+                                <Text className="text-[13px] font-black text-slate-800">{pass.id === 'vehicle' ? 'Varies' : `₹${pass.price}`}</Text>
                             </View>
                         </View>
 
-                        <View className="flex-row bg-white/60 rounded-2xl p-1 mb-3">
-                            <View className="flex-1 items-center py-2">
-                                <Text className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Used</Text>
-                                <Text className="text-lg font-black text-slate-800">{countsByType[pass.id]?.approved || pass.used}</Text>
+                        {pass.id === 'vehicle' ? (
+                            <View className="mb-3">
+                                <View className="flex-row bg-white/60 rounded-t-2xl p-2 border-b border-slate-100/50">
+                                    <View className="flex-1 px-2">
+                                        <Text className="text-[11px] font-black text-slate-700 uppercase tracking-wider mb-1">2-Wheeler</Text>
+                                        <View className="flex-row items-baseline gap-2">
+                                            <Text className="text-[10px] font-bold text-slate-500">Free: {(pass as any).complimentaryTwoWheeler || 0}</Text>
+                                            <Text className="text-[10px] font-bold text-slate-500">Rem: <Text className="text-emerald-600">{(pass as any).remainingTwoWheeler || 0}</Text></Text>
+                                            <Text className="text-[10px] font-bold text-slate-500">Price: ₹{(pass as any).priceTwoWheeler || 0}</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                                <View className="flex-row bg-white/60 rounded-b-2xl p-2">
+                                    <View className="flex-1 px-2">
+                                        <Text className="text-[11px] font-black text-slate-700 uppercase tracking-wider mb-1">4-Wheeler</Text>
+                                        <View className="flex-row items-baseline gap-2">
+                                            <Text className="text-[10px] font-bold text-slate-500">Free: {(pass as any).complimentaryFourWheeler || 0}</Text>
+                                            <Text className="text-[10px] font-bold text-slate-500">Rem: <Text className="text-emerald-600">{(pass as any).remainingFourWheeler || 0}</Text></Text>
+                                            <Text className="text-[10px] font-bold text-slate-500">Price: ₹{(pass as any).priceFourWheeler || 0}</Text>
+                                        </View>
+                                    </View>
+                                </View>
                             </View>
-                            <View className="w-[1px] bg-slate-200/50 my-2" />
-                            <View className="flex-1 items-center py-2">
-                                <Text className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Remaining</Text>
-                                <Text className="text-lg font-black text-slate-800">{Math.max(0, pass.complimentary - (countsByType[pass.id]?.approved || pass.used))}</Text>
+                        ) : (
+                            <View className="flex-row bg-white/60 rounded-2xl p-1 mb-3">
+                                <View className="flex-1 items-center py-2">
+                                    <Text className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Used</Text>
+                                    <Text className="text-lg font-black text-slate-800">{pass.used}</Text>
+                                </View>
+                                <View className="w-[1px] bg-slate-200/50 my-2" />
+                                <View className="flex-1 items-center py-2">
+                                    <Text className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Remaining</Text>
+                                    <Text className="text-lg font-black text-slate-800">{pass.remaining}</Text>
+                                </View>
+                                <View className="w-[1px] bg-slate-200/50 my-2" />
+                                <View className="flex-1 items-center py-2">
+                                    <Text className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total</Text>
+                                    <Text className="text-lg font-black text-slate-800">{pass.totalQuota || 'Open'}</Text>
+                                </View>
                             </View>
-                            <View className="w-[1px] bg-slate-200/50 my-2" />
-                            <View className="flex-1 items-center py-2">
-                                <Text className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total</Text>
-                                <Text className="text-lg font-black text-slate-800">{pass.totalQuota || 'Open'}</Text>
-                            </View>
-                        </View>
+                        )}
 
                         <TouchableOpacity 
                             onPress={() => handleOpenModal(pass)}
@@ -341,47 +501,7 @@ export default function PassesAndHospitalityScreen() {
                     </View>
                 ))}
 
-                {passUsages.length > 0 && (
-                    <View className="mt-6 mb-4 bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
-                        <View className="flex-row items-center mb-5 border-b border-slate-100 pb-4">
-                            <View className="w-10 h-10 bg-blue-50 rounded-full items-center justify-center mr-3">
-                                {/* @ts-ignore */}
-                                <Activity size={20} color="#3b82f6" />
-                            </View>
-                            <View>
-                                <Text className="text-lg font-black text-slate-800 tracking-tight">Usage Activity</Text>
-                                <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider">Recent scans & entries</Text>
-                            </View>
-                        </View>
-                        
-                        <View className="pl-4">
-                            {passUsages.map((usage, idx) => {
-                                const isLast = idx === passUsages.length - 1;
-                                return (
-                                    <View key={usage._id || idx} className="relative pl-6 mb-6">
-                                        {!isLast && <View className="absolute left-[-11px] top-6 bottom-[-32px] w-[2px] bg-slate-100" />}
-                                        <View className="absolute left-[-15px] top-1 w-2.5 h-2.5 rounded-full bg-blue-500 border-[3px] border-white shadow-sm z-10" />
-                                        
-                                        <View className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                                            <View className="flex-row justify-between items-start mb-2">
-                                                <View>
-                                                    <Text className="text-sm font-black text-slate-800 capitalize">{usage.passType || 'General'} Usage</Text>
-                                                    {usage.gate && <Text className="text-xs text-blue-600 font-bold mt-0.5">Gate: {usage.gate}</Text>}
-                                                </View>
-                                                <View className="bg-white px-2 py-1 rounded-md border border-slate-200 flex-row items-center shadow-sm">
-                                                    {/* @ts-ignore */}
-                                                    <Clock size={10} color="#64748b" className="mr-1" />
-                                                    <Text className="text-[10px] font-bold text-slate-600">{formatUsageTime(usage.markedAt)}</Text>
-                                                </View>
-                                            </View>
-                                            <Text className="text-xs text-slate-500 font-medium">Scanned by: {usage.scannedByName || 'Staff'}</Text>
-                                        </View>
-                                    </View>
-                                );
-                            })}
-                        </View>
-                    </View>
-                )}
+
                 
                 <View className="h-20" />
             </ScrollView>

@@ -326,6 +326,14 @@ export default function MoreMenuScreen() {
             disabled={false}
           />
           <MenuItem
+            icon={QrCode}
+            title="Pass Usage Activity"
+            subtitle="View scan history of your passes"
+            iconBg="#fef2f2" iconColor="#ef4444"
+            onPress={() => router.push('/pass-usage-activity' as any)}
+            disabled={false}
+          />
+          <MenuItem
             icon={Users}
             title="Team Members"
             subtitle="Add and manage your stall team"
