@@ -45,13 +45,20 @@ export const generateInvoiceHtml = (data: any, type: string, headerImgUrl: strin
 
     const company = doc?.exhibitor || data.company || {};
     const exhibitorContact = doc?.exhibitor?.contact1;
+    const primaryTeamMember = doc?.exhibitor?.teamMembers?.find((member: any) =>
+        member?.isPrimary || /primary contact/i.test(member?.roleAtExhibition || '')
+    );
     const companyContact = doc?.exhibitor?.contacts?.[0] || data.company?.contacts?.[0] || {};
 
     let clientContactPerson = '—';
     let clientContactNo = '—';
     let clientContactEmail = '—';
 
-    if (exhibitorContact) {
+    if (primaryTeamMember) {
+        clientContactPerson = primaryTeamMember.name || 'â€”';
+        clientContactNo = primaryTeamMember.mobile || exhibitorContact?.mobile || 'â€”';
+        clientContactEmail = primaryTeamMember.email || exhibitorContact?.email || 'â€”';
+    } else if (exhibitorContact) {
         clientContactPerson = `${exhibitorContact.firstName || ''} ${exhibitorContact.lastName || ''}`.trim() || '—';
         clientContactNo = exhibitorContact.mobile || '—';
         clientContactEmail = exhibitorContact.email || '—';
