@@ -9,9 +9,9 @@ import { apiClient } from '@/core/api/axios';
 const { width } = Dimensions.get('window');
 
 const formatHallLabel = (value?: any) => {
-  if (!value) return 'Hall 8, 9 & 10';
+  if (!value) return 'Hall 12';
   const text = String(value).trim();
-  if (!text) return 'Hall 8, 9 & 10';
+  if (!text) return 'Hall 12';
   return text.toLowerCase().startsWith('hall') ? text : `Hall ${text}`;
 };
 
@@ -70,7 +70,7 @@ export default function MyEventTab() {
         if (exhibitorId) {
           const [passRes, passConfigRes, orderRes, reqRes, docsRes] = await Promise.all([
             apiClient.get(`/exhibitor-pass-requests/exhibitor/${exhibitorId}`).catch(() => null),
-            apiClient.get('/exhibitor-pass-config/active').catch(() => null),
+            apiClient.get('/exhibitor-pass-config/my-active').catch(() => null),
             apiClient.get('/stall-accessories/orders', { params: { exhibitorId } }).catch(() => null),
             apiClient.get('/document-requirements').catch(() => null),
             apiClient.get(`/client-documents/${exhibitorId}`).catch(() => null),

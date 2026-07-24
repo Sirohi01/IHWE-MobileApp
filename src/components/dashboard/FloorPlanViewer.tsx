@@ -989,7 +989,7 @@ export const FloorPlanViewer = ({
               <MapPin size={24} color="#0f172a" />
               <View>
                 <Text style={{ color: '#0f172a', fontWeight: '900', fontSize: 20 }}>Floor Plan</Text>
-                <Text style={{ color: '#64748b', fontWeight: '500', fontSize: 12 }}>Hall 8, 9 & 10</Text>
+                <Text style={{ color: '#64748b', fontWeight: '500', fontSize: 12 }}>Hall 12</Text>
               </View>
             </View>
 

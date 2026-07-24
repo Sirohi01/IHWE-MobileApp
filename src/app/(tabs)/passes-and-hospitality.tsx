@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, ImageBackground, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Users, UserCheck, Car, Wrench, ArrowRight, X, Sparkles, Building2, Ticket, CheckCircle2, ChevronRight, Hash } from 'lucide-react-native';
+import { Users, UserCheck, Car, Wrench, ArrowRight, X, Sparkles, Building2, Ticket, CheckCircle2, ChevronRight, Hash, Activity, Clock } from 'lucide-react-native';
 import { apiClient } from '@/core/api/axios';
 
 export default function PassesAndHospitalityScreen() {
@@ -18,6 +18,7 @@ export default function PassesAndHospitalityScreen() {
     const [exhibitorId, setExhibitorId] = useState('');
     const [requests, setRequests] = useState<any[]>([]);
     const [passConfigs, setPassConfigs] = useState<any[]>([]);
+    const [passUsages, setPassUsages] = useState<any[]>([]);
 
     const fetchRequests = async () => {
         try {
@@ -25,12 +26,14 @@ export default function PassesAndHospitalityScreen() {
             const id = dash.data?.data?._id;
             if (!id) return;
             setExhibitorId(id);
-            const [res, configRes] = await Promise.all([
+            const [res, configRes, usageRes] = await Promise.all([
                 apiClient.get(`/exhibitor-pass-requests/exhibitor/${id}`),
-                apiClient.get('/exhibitor-pass-config/active').catch(() => null)
+                apiClient.get('/exhibitor-pass-config/my-active').catch(() => null),
+                apiClient.get('/exhibitor-auth/my-pass-usage').catch(() => null)
             ]);
             setRequests(res.data?.data || []);
             setPassConfigs(configRes?.data?.data || []);
+            setPassUsages(usageRes?.data?.data || []);
         } catch (error) {
             console.log('Failed to load pass requests', error);
         } finally {
@@ -216,6 +219,12 @@ export default function PassesAndHospitalityScreen() {
         return acc;
     }, {});
 
+    const formatUsageTime = (dateString: string) => {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + ' on ' + date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    };
+
     if (loading) {
         return (
             <View className="flex-1 bg-[#f4f7f9] items-center justify-center">
@@ -227,7 +236,6 @@ export default function PassesAndHospitalityScreen() {
 
     return (
         <View className="flex-1 bg-[#f4f7f9]">
-            {/* Custom Header */}
             <View className="w-full bg-white pt-14 pb-4 px-6 border-b border-slate-200 shadow-sm z-10">
                 <View className="flex-row items-center mb-1">
                     {/* @ts-ignore */}
@@ -243,8 +251,6 @@ export default function PassesAndHospitalityScreen() {
                 contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, paddingTop: 10 }}
                 showsVerticalScrollIndicator={false}
             >
-                
-                {/* Complimentary Quota Grid */}
                 <View className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 mb-4">
                     <View className="flex-row items-center justify-between mb-3">
                         <View>
@@ -252,6 +258,7 @@ export default function PassesAndHospitalityScreen() {
                             <Text className="text-xs font-medium text-slate-500 mt-0.5">Your included free passes</Text>
                         </View>
                         <View className="w-10 h-10 bg-indigo-50 rounded-full items-center justify-center">
+                            {/* @ts-ignore */}
                             <Ticket size={20} color="#6366f1" />
                         </View>
                     </View>
@@ -275,7 +282,6 @@ export default function PassesAndHospitalityScreen() {
                     </View>
                 </View>
 
-                {/* Request Extra Passes Section */}
                 <View className="flex-row items-center justify-between mb-2 mt-1 px-2">
                     <Text className="text-lg font-black text-slate-800">Request Extra Passes</Text>
                     <View className="bg-orange-100 px-3 py-1 rounded-full">
@@ -329,20 +335,60 @@ export default function PassesAndHospitalityScreen() {
                             <Text className={`font-black text-[13px] uppercase tracking-widest mr-2 ${pass.theme.text}`}>
                                 {(countsByType[pass.id]?.pending || 0) > 0 ? `${countsByType[pass.id].pending} Pending` : 'Request Passes'}
                             </Text>
+                            {/* @ts-ignore */}
                             <ArrowRight size={16} className={pass.theme.text} />
                         </TouchableOpacity>
                     </View>
                 ))}
+
+                {passUsages.length > 0 && (
+                    <View className="mt-6 mb-4 bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+                        <View className="flex-row items-center mb-5 border-b border-slate-100 pb-4">
+                            <View className="w-10 h-10 bg-blue-50 rounded-full items-center justify-center mr-3">
+                                {/* @ts-ignore */}
+                                <Activity size={20} color="#3b82f6" />
+                            </View>
+                            <View>
+                                <Text className="text-lg font-black text-slate-800 tracking-tight">Usage Activity</Text>
+                                <Text className="text-xs font-bold text-slate-500 uppercase tracking-wider">Recent scans & entries</Text>
+                            </View>
+                        </View>
+                        
+                        <View className="pl-4">
+                            {passUsages.map((usage, idx) => {
+                                const isLast = idx === passUsages.length - 1;
+                                return (
+                                    <View key={usage._id || idx} className="relative pl-6 mb-6">
+                                        {!isLast && <View className="absolute left-[-11px] top-6 bottom-[-32px] w-[2px] bg-slate-100" />}
+                                        <View className="absolute left-[-15px] top-1 w-2.5 h-2.5 rounded-full bg-blue-500 border-[3px] border-white shadow-sm z-10" />
+                                        
+                                        <View className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                                            <View className="flex-row justify-between items-start mb-2">
+                                                <View>
+                                                    <Text className="text-sm font-black text-slate-800 capitalize">{usage.passType || 'General'} Usage</Text>
+                                                    {usage.gate && <Text className="text-xs text-blue-600 font-bold mt-0.5">Gate: {usage.gate}</Text>}
+                                                </View>
+                                                <View className="bg-white px-2 py-1 rounded-md border border-slate-200 flex-row items-center shadow-sm">
+                                                    {/* @ts-ignore */}
+                                                    <Clock size={10} color="#64748b" className="mr-1" />
+                                                    <Text className="text-[10px] font-bold text-slate-600">{formatUsageTime(usage.markedAt)}</Text>
+                                                </View>
+                                            </View>
+                                            <Text className="text-xs text-slate-500 font-medium">Scanned by: {usage.scannedByName || 'Staff'}</Text>
+                                        </View>
+                                    </View>
+                                );
+                            })}
+                        </View>
+                    </View>
+                )}
                 
                 <View className="h-20" />
             </ScrollView>
 
-            {/* Dynamic Modal Form (Redesigned) */}
             <Modal visible={isModalOpen} animationType="slide" transparent>
                 <View className="flex-1 bg-slate-900/60 justify-end">
                     <View className="bg-[#f8fafc] rounded-t-[32px] h-[90%] overflow-hidden shadow-2xl">
-                        
-                        {/* Modal Header */}
                         <View className={`px-6 py-5 flex-row justify-between items-center bg-white border-b border-slate-100`}>
                             <View className="flex-row items-center">
                                 <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${selectedPass?.theme?.bg}`}>
@@ -354,12 +400,12 @@ export default function PassesAndHospitalityScreen() {
                                 </View>
                             </View>
                             <TouchableOpacity onPress={() => setIsModalOpen(false)} className="bg-slate-50 p-2 rounded-full border border-slate-200">
+                                {/* @ts-ignore */}
                                 <X size={20} color="#64748b" />
                             </TouchableOpacity>
                         </View>
 
                         <ScrollView className="p-6" contentContainerStyle={{ paddingBottom: 40 }}>
-                            {/* Quantity Selector */}
                             <View className="bg-white p-5 rounded-3xl mb-6 border border-slate-200 shadow-sm">
                                 <Text className="text-[12px] font-black text-slate-400 uppercase tracking-widest mb-4">Select Quantity</Text>
                                 <View className="flex-row items-center justify-between">
@@ -389,7 +435,6 @@ export default function PassesAndHospitalityScreen() {
                                 </Text>
                             </View>
 
-                            {/* Dynamic Fields */}
                             {selectedPass?.id === 'vehicle' ? (
                                 vehicles.map((veh, index) => (
                                     <View key={index} className="bg-white border border-slate-200 rounded-3xl p-5 mb-5 shadow-sm relative overflow-hidden">
@@ -405,6 +450,7 @@ export default function PassesAndHospitalityScreen() {
                                                 onPress={() => updateVehicle(index, 'vehicleType', '2-wheeler')}
                                                 className={`flex-1 py-3.5 rounded-2xl border-2 items-center flex-row justify-center ${veh.vehicleType === '2-wheeler' ? 'bg-emerald-50 border-emerald-500' : 'bg-slate-50 border-slate-100'}`}
                                             >
+                                                {/* @ts-ignore */}
                                                 {veh.vehicleType === '2-wheeler' && <CheckCircle2 size={14} color="#10b981" className="mr-2" />}
                                                 <Text className={`font-black text-[13px] ${veh.vehicleType === '2-wheeler' ? 'text-emerald-700' : 'text-slate-500'}`}>2-Wheeler</Text>
                                             </TouchableOpacity>
@@ -412,6 +458,7 @@ export default function PassesAndHospitalityScreen() {
                                                 onPress={() => updateVehicle(index, 'vehicleType', '4-wheeler')}
                                                 className={`flex-1 py-3.5 rounded-2xl border-2 items-center flex-row justify-center ${veh.vehicleType === '4-wheeler' ? 'bg-emerald-50 border-emerald-500' : 'bg-slate-50 border-slate-100'}`}
                                             >
+                                                {/* @ts-ignore */}
                                                 {veh.vehicleType === '4-wheeler' && <CheckCircle2 size={14} color="#10b981" className="mr-2" />}
                                                 <Text className={`font-black text-[13px] ${veh.vehicleType === '4-wheeler' ? 'text-emerald-700' : 'text-slate-500'}`}>4-Wheeler</Text>
                                             </TouchableOpacity>
@@ -420,6 +467,7 @@ export default function PassesAndHospitalityScreen() {
                                         <Text className="text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Registration Number</Text>
                                         <View className="relative justify-center">
                                             <View className="absolute left-4 z-10">
+                                                {/* @ts-ignore */}
                                                 <Hash size={16} color="#94a3b8" />
                                             </View>
                                             <TextInput 
@@ -497,6 +545,7 @@ export default function PassesAndHospitalityScreen() {
                                                         onPress={() => updatePersonnel(index, 'gender', 'male')}
                                                         className={`flex-1 py-3 rounded-xl border-2 items-center flex-row justify-center ${person.gender === 'male' ? 'bg-blue-50 border-blue-400' : 'bg-slate-50 border-slate-100'}`}
                                                     >
+                                                        {/* @ts-ignore */}
                                                         {person.gender === 'male' && <CheckCircle2 size={12} color="#60a5fa" className="mr-1.5" />}
                                                         <Text className={`font-black text-[11px] ${person.gender === 'male' ? 'text-blue-700' : 'text-slate-500'}`}>Male</Text>
                                                     </TouchableOpacity>
@@ -504,6 +553,7 @@ export default function PassesAndHospitalityScreen() {
                                                         onPress={() => updatePersonnel(index, 'gender', 'female')}
                                                         className={`flex-1 py-3 rounded-xl border-2 items-center flex-row justify-center ${person.gender === 'female' ? 'bg-pink-50 border-pink-400' : 'bg-slate-50 border-slate-100'}`}
                                                     >
+                                                        {/* @ts-ignore */}
                                                         {person.gender === 'female' && <CheckCircle2 size={12} color="#f472b6" className="mr-1.5" />}
                                                         <Text className={`font-black text-[11px] ${person.gender === 'female' ? 'text-pink-700' : 'text-slate-500'}`}>Female</Text>
                                                     </TouchableOpacity>
@@ -511,6 +561,7 @@ export default function PassesAndHospitalityScreen() {
                                                         onPress={() => updatePersonnel(index, 'gender', 'other')}
                                                         className={`flex-1 py-3 rounded-xl border-2 items-center flex-row justify-center ${person.gender === 'other' ? 'bg-purple-50 border-purple-400' : 'bg-slate-50 border-slate-100'}`}
                                                     >
+                                                        {/* @ts-ignore */}
                                                         {person.gender === 'other' && <CheckCircle2 size={12} color="#c084fc" className="mr-1.5" />}
                                                         <Text className={`font-black text-[11px] ${person.gender === 'other' ? 'text-purple-700' : 'text-slate-500'}`}>Other</Text>
                                                     </TouchableOpacity>
@@ -521,7 +572,6 @@ export default function PassesAndHospitalityScreen() {
                                 ))
                             )}
 
-                            {/* Submit Button */}
                             <TouchableOpacity 
                                 onPress={handleSubmit}
                                 disabled={isSubmitting}
@@ -532,6 +582,7 @@ export default function PassesAndHospitalityScreen() {
                                 ) : (
                                     <>
                                         <Text className="text-white font-black text-[14px] uppercase tracking-widest mr-2">Submit {quantity} Requests</Text>
+                                        {/* @ts-ignore */}
                                         <ChevronRight size={18} color="#fff" />
                                     </>
                                 )}

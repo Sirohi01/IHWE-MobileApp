@@ -27,3 +27,14 @@ apiClient.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      // Token is invalid or expired
+      await SecureStore.deleteItemAsync('exhibitorToken');
+      // If you are using expo-router, you could import router and do: router.replace('/login') here
+    }
+    return Promise.reject(error);
+  }
+);

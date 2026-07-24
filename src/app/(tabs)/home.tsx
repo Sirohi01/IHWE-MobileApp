@@ -394,7 +394,7 @@ export default function HomeTab() {
                 <Text className="text-white font-black text-[18px] leading-tight mb-1 tracking-tight">9th IHWE India Health Seminar</Text>
                 <View className="flex-row items-center gap-1.5 mt-1">
                   <MapPin size={12} color="#cbd5e1" />
-                  <Text className="text-slate-300 text-[11px] font-medium">Hall Nos. 8, 9 & 10, Pragati Maidan, New Delhi – 110001, Bharat</Text>
+                  <Text className="text-slate-300 text-[11px] font-medium">Hall Nos. 12, Pragati Maidan, New Delhi – 110001, Bharat</Text>
                 </View>
               </View>
             </ImageBackground>

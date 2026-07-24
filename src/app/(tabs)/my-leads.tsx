@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Linking, Alert, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Users, Building, Phone, Mail, FileText, Calendar, Check, X, Search, Thermometer, PenSquare } from 'lucide-react-native';
+import { ArrowLeft, Users, Building, Phone, Mail, FileText, Calendar, Check, X, Search, Thermometer, PenSquare, Download } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { apiClient } from '@/core/api/axios';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function MyLeadsScreen() {
   const [allLeads, setAllLeads] = useState<any[]>([]);
@@ -18,8 +21,36 @@ export default function MyLeadsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [tempNotes, setTempNotes] = useState('');
 
+  const syncOfflineLeads = async () => {
+    try {
+      const queueStr = await AsyncStorage.getItem('offlineLeadsQueue');
+      if (queueStr) {
+        const queue = JSON.parse(queueStr);
+        if (queue.length > 0) {
+          const remainingQueue = [];
+          for (const lead of queue) {
+            try {
+              await apiClient.post('/exhibitor-leads', lead);
+            } catch (err: any) {
+              if (!err.response || err.message === 'Network Error') {
+                remainingQueue.push(lead);
+              }
+            }
+          }
+          await AsyncStorage.setItem('offlineLeadsQueue', JSON.stringify(remainingQueue));
+          if (queue.length > remainingQueue.length) {
+            Alert.alert('Sync Successful', `${queue.length - remainingQueue.length} offline leads have been synced.`);
+          }
+        }
+      }
+    } catch (e) {
+      console.log('Error syncing offline leads', e);
+    }
+  };
+
   const fetchLeads = async () => {
     try {
+      await syncOfflineLeads();
       const response = await apiClient.get('/exhibitor-leads/my');
       if (response.data.success) {
         setAllLeads(response.data.data);
@@ -83,6 +114,48 @@ export default function MyLeadsScreen() {
     });
   };
 
+  const exportToCSV = async () => {
+    try {
+      if (allLeads.length === 0) {
+        Alert.alert('No Data', 'There are no leads to export.');
+        return;
+      }
+      
+      const headers = ['Name', 'Designation', 'Company', 'Phone', 'Email', 'Temperature', 'Source', 'Interest', 'Notes', 'Date'];
+      const csvContent = [
+        headers.join(','),
+        ...allLeads.map(lead => [
+          `"${lead.name || ''}"`,
+          `"${lead.designation || ''}"`,
+          `"${lead.company || lead.registrationId || ''}"`,
+          `"${lead.phone || ''}"`,
+          `"${lead.email || ''}"`,
+          `"${lead.temperature || 'Uncategorized'}"`,
+          `"${lead.sourceType || 'unknown'}"`,
+          `"${lead.interest || ''}"`,
+          `"${lead.notes ? lead.notes.replace(/"/g, '""') : ''}"`,
+          `"${formatDate(lead.createdAt)}"`
+        ].join(','))
+      ].join('\n');
+
+      const fileUri = `${FileSystem.documentDirectory}my_leads.csv`;
+      await FileSystem.writeAsStringAsync(fileUri, csvContent, { encoding: FileSystem.EncodingType.UTF8 });
+      
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'text/csv',
+          dialogTitle: 'Export Leads',
+          UTI: 'public.comma-separated-values-text'
+        });
+      } else {
+        Alert.alert('Error', 'Sharing is not available on this device');
+      }
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      Alert.alert('Export Error', 'Failed to generate CSV file.');
+    }
+  };
+
   const updateLead = async (id: string, updates: any) => {
     try {
       const res = await apiClient.put(`/exhibitor-leads/${id}`, updates);
@@ -115,7 +188,6 @@ export default function MyLeadsScreen() {
     
     return (
       <View className="bg-white rounded-2xl p-5 mb-4 shadow-sm border border-slate-100">
-        {/* Header Row */}
         <View className="flex-row justify-between items-start mb-3">
           <View className="flex-1 pr-4">
             <Text className="text-lg font-bold text-slate-800" numberOfLines={1}>
@@ -133,6 +205,7 @@ export default function MyLeadsScreen() {
             onPress={() => openEditModal(lead)}
             className={`px-3 py-1.5 rounded-full border flex-row items-center gap-1.5 ${tempConfig.bg} ${tempConfig.border}`}
           >
+            {/* @ts-ignore */}
             <Thermometer size={12} color={tempConfig.iconColor} />
             <Text className={`text-[10px] font-black uppercase tracking-wider ${tempConfig.text}`}>
               {lead.temperature || 'Uncategorized'}
@@ -140,10 +213,10 @@ export default function MyLeadsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Details Row */}
         <View className="space-y-2 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
           {lead.company ? (
             <View className="flex-row items-center">
+              {/* @ts-ignore */}
               <Building size={14} color="#64748b" className="mr-2.5" />
               <Text className="text-[13px] font-medium text-slate-700 flex-1" numberOfLines={1}>{lead.company}</Text>
             </View>
@@ -151,18 +224,19 @@ export default function MyLeadsScreen() {
 
           {lead.interest ? (
             <View className="flex-row items-center">
+              {/* @ts-ignore */}
               <FileText size={14} color="#64748b" className="mr-2.5" />
               <Text className="text-[13px] font-medium text-slate-700 flex-1" numberOfLines={1}>{lead.interest}</Text>
             </View>
           ) : null}
 
           <View className="flex-row items-center">
+            {/* @ts-ignore */}
             <Calendar size={14} color="#64748b" className="mr-2.5" />
             <Text className="text-[12px] font-medium text-slate-500">{formatDate(lead.createdAt)}</Text>
           </View>
         </View>
 
-        {/* Notes Preview (if any) */}
         {lead.notes ? (
           <View className="mb-4">
             <Text className="text-xs text-slate-400 font-medium mb-1 uppercase tracking-wider">Notes</Text>
@@ -170,7 +244,6 @@ export default function MyLeadsScreen() {
           </View>
         ) : null}
 
-        {/* Action Buttons */}
         <View className="flex-row gap-3 pt-1">
           <TouchableOpacity 
             className="flex-1 bg-[#f0fdf4] flex-row items-center justify-center py-3 rounded-xl border border-[#bbf7d0]"
@@ -178,6 +251,7 @@ export default function MyLeadsScreen() {
             disabled={!lead.phone}
             style={{ opacity: lead.phone ? 1 : 0.5 }}
           >
+            {/* @ts-ignore */}
             <Phone size={16} color="#16a34a" className="mr-2" />
             <Text className="text-[#16a34a] font-bold text-sm tracking-wide">Call</Text>
           </TouchableOpacity>
@@ -188,6 +262,7 @@ export default function MyLeadsScreen() {
             disabled={!lead.email}
             style={{ opacity: lead.email ? 1 : 0.5 }}
           >
+            {/* @ts-ignore */}
             <Mail size={16} color="#2563eb" className="mr-2" />
             <Text className="text-[#2563eb] font-bold text-sm tracking-wide">Email</Text>
           </TouchableOpacity>
@@ -196,6 +271,7 @@ export default function MyLeadsScreen() {
             className="w-12 bg-slate-100 flex-row items-center justify-center py-3 rounded-xl border border-slate-200"
             onPress={() => openEditModal(lead)}
           >
+            {/* @ts-ignore */}
             <PenSquare size={16} color="#475569" />
           </TouchableOpacity>
         </View>
@@ -208,10 +284,10 @@ export default function MyLeadsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-[#f8fafc]">
-      {/* Header */}
       <View className="bg-white px-5 py-4 flex-row items-center justify-between shadow-sm border-b border-slate-200 z-10">
         <View className="flex-row items-center">
           <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2 -ml-2 rounded-full hover:bg-slate-100">
+            {/* @ts-ignore */}
             <ArrowLeft size={24} color="#0f172a" />
           </TouchableOpacity>
           <View>
@@ -219,15 +295,22 @@ export default function MyLeadsScreen() {
             <Text className="text-xs font-bold text-slate-500 mt-0.5 uppercase tracking-wider">{allLeads.length} total captured</Text>
           </View>
         </View>
-        <View className="bg-indigo-50 w-12 h-12 rounded-full items-center justify-center border border-indigo-100 shadow-sm">
-          <Users size={22} color="#4f46e5" />
+        <View className="flex-row items-center gap-3">
+          <TouchableOpacity onPress={exportToCSV} className="bg-indigo-50 w-10 h-10 rounded-full items-center justify-center border border-indigo-100 shadow-sm">
+            {/* @ts-ignore */}
+            <Download size={20} color="#4f46e5" />
+          </TouchableOpacity>
+          <View className="bg-indigo-50 w-10 h-10 rounded-full items-center justify-center border border-indigo-100 shadow-sm">
+            {/* @ts-ignore */}
+            <Users size={20} color="#4f46e5" />
+          </View>
         </View>
       </View>
 
-      {/* Search & Filter Tabs */}
       <View className="bg-white border-b border-slate-200">
         <View className="px-4 pt-3">
           <View className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 flex-row items-center">
+            {/* @ts-ignore */}
             <Search size={16} color="#94a3b8" />
             <TextInput
               value={searchQuery}
@@ -279,6 +362,7 @@ export default function MyLeadsScreen() {
       ) : leads.length === 0 ? (
         <View className="flex-1 items-center justify-center px-8">
           <View className="w-24 h-24 bg-slate-100 rounded-full items-center justify-center mb-6 shadow-sm">
+            {/* @ts-ignore */}
             <Search size={40} color="#94a3b8" />
           </View>
           <Text className="text-2xl font-black text-slate-800 text-center mb-3">No Leads Found</Text>
@@ -311,13 +395,13 @@ export default function MyLeadsScreen() {
         </ScrollView>
       )}
 
-      {/* Edit Modal */}
       <Modal visible={modalVisible} transparent animationType="fade">
         <View className="flex-1 bg-black/60 justify-end p-4">
           <View className="bg-white rounded-3xl p-6 pb-8 shadow-2xl">
             <View className="flex-row justify-between items-center mb-6">
               <Text className="text-xl font-black text-slate-800">Update Lead</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)} className="bg-slate-100 p-2 rounded-full">
+                {/* @ts-ignore */}
                 <X size={20} color="#64748b" />
               </TouchableOpacity>
             </View>
@@ -333,6 +417,7 @@ export default function MyLeadsScreen() {
                     onPress={() => updateLead(selectedLead._id, { temperature: temp })}
                     className={`px-4 py-2.5 rounded-full border-2 flex-row items-center gap-2 ${isSelected ? config.border + ' ' + config.bg : 'border-slate-200 bg-white'}`}
                   >
+                    {/* @ts-ignore */}
                     {isSelected && <Check size={14} color={config.iconColor} />}
                     <Text className={`font-bold ${isSelected ? config.text : 'text-slate-600'}`}>{temp}</Text>
                   </TouchableOpacity>

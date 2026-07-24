@@ -1,7 +1,7 @@
 import { Image } from 'react-native';
 
 const PROFORMA_EVENT_NAME = '9th Edition of International Health & Wellness Expo (IHWE Global Edition)';
-const PROFORMA_PLACE_OF_SUPPLY = 'Hall Nos. 8, 9 & 10, Pragati Maidan, New Delhi - 110001, Bharat';
+const PROFORMA_PLACE_OF_SUPPLY = 'Hall Nos. 12, Pragati Maidan, New Delhi - 110001, Bharat';
 const PROFORMA_EVENT_GST_NO = '08AAFCN9238F1Z6';
 
 function toWords(n: number) {
@@ -46,11 +46,11 @@ export const generateInvoiceHtml = (data: any, type: string, headerImgUrl: strin
     const company = doc?.exhibitor || data.company || {};
     const exhibitorContact = doc?.exhibitor?.contact1;
     const companyContact = doc?.exhibitor?.contacts?.[0] || data.company?.contacts?.[0] || {};
-    
+
     let clientContactPerson = '—';
     let clientContactNo = '—';
     let clientContactEmail = '—';
-    
+
     if (exhibitorContact) {
         clientContactPerson = `${exhibitorContact.firstName || ''} ${exhibitorContact.lastName || ''}`.trim() || '—';
         clientContactNo = exhibitorContact.mobile || '—';
@@ -68,7 +68,7 @@ export const generateInvoiceHtml = (data: any, type: string, headerImgUrl: strin
     const clientCompanyName = doc?.company_name || doc?.exhibitor?.exhibitorName || company?.companyName || company?.exhibitorName || '—';
     const clientCompanyAddress = doc?.company_addr || [company?.address, company?.city, company?.pincode ? `- ${company.pincode}` : '', company?.state, company?.country].filter(Boolean).join(', ');
     const clientGstNo = doc?.company_gst_no || doc?.gst_no || company?.gst || '';
-    
+
     const shipmentContactPerson = doc?.consignee_person || 'Vijay Sharma';
     const shipmentContactNo = doc?.consignee_phone || clientContactNo;
 
@@ -85,8 +85,8 @@ export const generateInvoiceHtml = (data: any, type: string, headerImgUrl: strin
     const isIgst = company?.state && company.state.toLowerCase() !== 'delhi';
 
     const sigUrl = sigBase64 || null;
-    const stampUrl = stampBase64 || null;    const eventName = doc?.event_name || doc?.consignee_name || '9TH EDITION OF INTERNATIONAL HEALTH & WELLNESS EXPO (IHWE GLOBAL EDITION)';
-    const eventPlaceOfSupply = doc?.event_place_of_supply || doc?.consignee_addr || 'Hall Nos. 8, 9 & 10, Pragati Maidan, New Delhi - 110001, Bharat';
+    const stampUrl = stampBase64 || null; const eventName = doc?.event_name || doc?.consignee_name || '9TH EDITION OF INTERNATIONAL HEALTH & WELLNESS EXPO (IHWE GLOBAL EDITION)';
+    const eventPlaceOfSupply = doc?.event_place_of_supply || doc?.consignee_addr || 'Hall Nos. 12, Pragati Maidan, New Delhi - 110001, Bharat';
     const eventGstNo = doc?.event_gst_no || '09AAFCN9238F1Z6';
 
     const createdDateTime = doc?.added ? new Date(doc.added).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });

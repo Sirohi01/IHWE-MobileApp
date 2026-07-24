@@ -7,9 +7,9 @@ import { ChevronLeft, Maximize2, Tag, Package, Box, Zap, Trash2, Sofa, PlusCircl
 import { FloorPlanViewer } from '@/components/dashboard/FloorPlanViewer';
 
 const formatHallLabel = (value?: any) => {
-  if (!value) return 'Hall 8, 9 & 10';
+  if (!value) return 'Hall 12';
   const text = String(value).trim();
-  if (!text) return 'Hall 8, 9 & 10';
+  if (!text) return 'Hall 12';
   return text.toLowerCase().startsWith('hall') ? text : `Hall ${text}`;
 };
 

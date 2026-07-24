@@ -32,6 +32,7 @@ const ICONS_MAP: Record<string, any> = {
 export default function AddOnServicesScreen() {
   const [catalog, setCatalog] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [entitlements, setEntitlements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
@@ -83,6 +84,17 @@ export default function AddOnServicesScreen() {
         const ordData = await ordRes.json();
         if (ordData.data) {
           setOrders(ordData.data);
+        }
+      }
+
+      // Get my real complimentary entitlements (computed from stall area)
+      if (token) {
+        const entRes = await fetch(`${apiClient.defaults.baseURL}/stall-accessories/my-entitlements`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const entData = await entRes.json();
+        if (entData.data) {
+          setEntitlements(entData.data);
         }
       }
     } catch (err) {
@@ -573,6 +585,9 @@ export default function AddOnServicesScreen() {
                   if (finalImageUrl) {
                     finalImageUrl = finalImageUrl.replace(/ /g, '%20');
                   }
+                  const entitlement = entitlements.find((e: any) => e.accessoryId === item._id);
+                  const entitledQty = entitlement?.entitledQty ?? item.includedQty;
+                  const remainingQty = entitlement?.remainingQty ?? item.includedQty;
 
                   return (
                     <View key={item._id} className="flex-row items-center py-3 px-3 mb-3 bg-slate-50 border border-slate-200 rounded-xl">
@@ -586,8 +601,11 @@ export default function AddOnServicesScreen() {
                       </View>
                       <View className="flex-1">
                         <Text className="text-slate-800 font-bold text-[13px] mb-1">{item.name}</Text>
-                        <View className="bg-green-100 self-start px-2 py-0.5 rounded-full">
-                          <Text className="text-green-700 font-bold text-[9px] uppercase tracking-widest">Included Free</Text>
+                        <View className="flex-row items-center">
+                          <View className="bg-green-100 self-start px-2 py-0.5 rounded-full mr-2">
+                            <Text className="text-green-700 font-bold text-[9px] uppercase tracking-widest">Included Free</Text>
+                          </View>
+                          <Text className="text-slate-500 font-bold text-[10px]">Entitled: {entitledQty} {item.unit} · Remaining: {remainingQty}</Text>
                         </View>
                       </View>
                     </View>
