@@ -275,13 +275,20 @@ export default function MSMEApplicationScreen() {
             const success = await saveStep(2, { bankDetails: mappedBankDetails });
             if (success) setCurrentStep(3);
         } else if (currentStep === 3) {
-            setCurrentStep(4); // Documents auto-save on upload
+            const success = await saveStep(3, {});
+            if (success) setCurrentStep(4);
         }
     };
 
     const handleSubmit = async () => {
         try {
             setSaving(true);
+            const success = await saveStep(4, { declarationAgreed: true });
+            if (!success) {
+                setSaving(false);
+                return;
+            }
+
             const token = await SecureStore.getItemAsync('exhibitorToken');
             const dash = await apiClient.get('/exhibitor-auth/dashboard', { headers: { Authorization: `Bearer ${token}` } });
             const exhibitorId = dash.data?.data?._id;
@@ -711,26 +718,87 @@ export default function MSMEApplicationScreen() {
 
                 {/* Step 4: Review */}
                 {currentStep === 4 && (
-                    <View className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-4">
-                        <Text className="text-[14px] font-black text-[#1a3a7c] mb-4">Review Application</Text>
-                        <ReviewSection title="Applicant Details" data={{...companyDetails, ...authPersonDetails, ...registeredAddress}} onEdit={() => setCurrentStep(1)} />
-                        <ReviewSection title="Bank Details" data={bankDetails} onEdit={() => setCurrentStep(2)} />
-                        
-                        <View className="mt-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                            <Text className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">Documents Status</Text>
-                            <Text className="text-[15px] font-black text-slate-800">
-                                {data?.documents?.length || 0} Documents Uploaded
-                            </Text>
-                            {(data?.documents?.length || 0) < (REQUIRED_DOCUMENTS.filter(doc => {
-                                if (['udyam', 'gst', 'pan', 'aadhaar'].includes(doc.id)) return true;
-                                if (['hotelInvoice', 'hotelPayment'].includes(doc.id)) return expenseCategories.hotel_stay;
-                                if (['travelExpense', 'travelInvoice'].includes(doc.id)) return expenseCategories.travel;
-                                if (doc.id === 'courier') return expenseCategories.courier;
-                                if (doc.id === 'marketing') return expenseCategories.marketing_material;
-                                return false;
-                            }).length + BANK_DOCUMENTS.filter(d => d.required).length) && (
-                                <Text className="text-red-500 text-[11px] mt-1 font-bold">Please upload all required documents.</Text>
-                            )}
+                    <View className="mb-4">
+                        <View className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-4">
+                            <Text className="text-[14px] font-black text-[#1a3a7c] mb-4">Review Application</Text>
+                            <ReviewSection title="1. Applicant & MSME Details" data={{...companyDetails, ...authPersonDetails, ...registeredAddress}} />
+                            <ReviewSection title="2. Bank Details" data={bankDetails} />
+                            
+                            {/* 3. Uploaded Documents */}
+                            <View className="mb-5 pb-4 border-b border-slate-100">
+                                <View className="flex-row justify-between items-center mb-3">
+                                    <Text className="text-[12px] font-bold text-slate-500 uppercase tracking-widest">3. Uploaded Documents</Text>
+                                </View>
+                                
+                                <View className="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+                                    {[
+                                        ...REQUIRED_DOCUMENTS.filter(doc => {
+                                            if (['udyam', 'gst', 'pan', 'aadhaar'].includes(doc.id)) return true;
+                                            if (['hotelInvoice', 'hotelPayment'].includes(doc.id)) return expenseCategories.hotel_stay;
+                                            if (['travelExpense', 'travelInvoice'].includes(doc.id)) return expenseCategories.travel;
+                                            if (doc.id === 'courier') return expenseCategories.courier;
+                                            if (doc.id === 'marketing') return expenseCategories.marketing_material;
+                                            return false;
+                                        }),
+                                        ...BANK_DOCUMENTS
+                                    ].map((doc, idx, arr) => {
+                                        const uploaded = data?.documents?.find((d: any) => d.documentType === doc.id);
+                                        return (
+                                            <View key={doc.id} className={`flex-row items-center justify-between p-3 ${idx < arr.length - 1 ? 'border-b border-slate-100' : ''}`}>
+                                                <Text className="text-[12px] font-bold text-slate-700 flex-1">{doc.name}</Text>
+                                                {uploaded ? (
+                                                    <View className="flex-row items-center">
+                                                        <Text className="text-[11px] font-bold text-[#16a34a] mr-1">Uploaded</Text>
+                                                        {/* @ts-ignore */}
+                                                        <CheckCircle2 size={14} color="#16a34a" />
+                                                    </View>
+                                                ) : (
+                                                    <View className="flex-row items-center">
+                                                        <Text className="text-[11px] font-bold text-red-500 mr-1">{('required' in doc && doc.required === false) ? 'Optional' : 'Pending'}</Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                                
+                                {(data?.documents?.length || 0) < (REQUIRED_DOCUMENTS.filter(doc => {
+                                    if (['udyam', 'gst', 'pan', 'aadhaar'].includes(doc.id)) return true;
+                                    if (['hotelInvoice', 'hotelPayment'].includes(doc.id)) return expenseCategories.hotel_stay;
+                                    if (['travelExpense', 'travelInvoice'].includes(doc.id)) return expenseCategories.travel;
+                                    if (doc.id === 'courier') return expenseCategories.courier;
+                                    if (doc.id === 'marketing') return expenseCategories.marketing_material;
+                                    return false;
+                                }).length + BANK_DOCUMENTS.filter(d => d.required).length) && (
+                                    <Text className="text-red-500 text-[11px] mt-2 font-bold text-center">Please upload all required documents to proceed.</Text>
+                                )}
+                            </View>
+
+                            <ReviewSection 
+                                title="4. Event Participation Details" 
+                                data={{
+                                    "Event Name": eventDetails.event_name,
+                                    "Stall Number": eventDetails.stall_number,
+                                    "Hall Number": eventDetails.hall_number,
+                                    "Stall Size": eventDetails.stall_size,
+                                    "Participation Type": eventDetails.participation_type,
+                                    "Booking Status": eventDetails.booking_status,
+                                    "Payment Status": eventDetails.payment_status
+                                }} 
+                            />
+
+                            <ReviewSection 
+                                title="5. Claim Summary" 
+                                data={{
+                                    "Stall Charges": `₹ ${eventDetails.invoice_value ? eventDetails.invoice_value.toLocaleString('en-IN') : '0'}`,
+                                    "Hotel Stay": expenseCategories.hotel_stay ? 'Pending' : '₹ 0',
+                                    "Travel": expenseCategories.travel ? 'Pending' : '₹ 0',
+                                    "Courier": expenseCategories.courier ? 'Pending' : '₹ 0',
+                                    "Marketing": expenseCategories.marketing_material ? 'Pending' : '₹ 0',
+                                    "Total Claimed": `₹ ${eventDetails.invoice_value ? eventDetails.invoice_value.toLocaleString('en-IN') : '0'}`,
+                                    "Indicative Eligible Claim": `₹ ${eventDetails.invoice_value ? eventDetails.invoice_value.toLocaleString('en-IN') : '0'}`
+                                }} 
+                            />
                         </View>
                     </View>
                 )}
@@ -801,14 +869,17 @@ function ReviewSection({ title, data, onEdit }: any) {
         <View className="mb-5 pb-4 border-b border-slate-100">
             <View className="flex-row justify-between items-center mb-3">
                 <Text className="text-[12px] font-bold text-slate-500 uppercase tracking-widest">{title}</Text>
-                <TouchableOpacity onPress={onEdit}>
-                    <Text className="text-blue-600 font-bold text-[12px]">Edit</Text>
-                </TouchableOpacity>
+                {onEdit && (
+                    <TouchableOpacity onPress={onEdit}>
+                        <Text className="text-blue-600 font-bold text-[12px]">Edit</Text>
+                    </TouchableOpacity>
+                )}
             </View>
             {Object.entries(data).map(([key, val]: any) => (
-                <View key={key} className="flex-row justify-between mb-2">
-                    <Text className="text-[13px] text-slate-500 capitalize">{key.replace(/_/g, ' ')}</Text>
-                    <Text className="text-[13px] font-bold text-slate-800 text-right max-w-[60%]">{val || '-'}</Text>
+                <View key={key} className="flex-row mb-2">
+                    <Text className="text-[13px] text-slate-500 capitalize w-[40%]">{key.replace(/_/g, ' ')}</Text>
+                    <Text className="text-[13px] text-slate-400 mr-2">:</Text>
+                    <Text className="text-[13px] font-bold text-slate-800 flex-1 text-left">{val || '-'}</Text>
                 </View>
             ))}
         </View>
