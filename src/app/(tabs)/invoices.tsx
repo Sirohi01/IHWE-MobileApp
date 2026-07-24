@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Linking, Alert } from 'react-native';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { apiClient } from '@/core/api/axios';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import { API_URL, apiClient } from '@/core/api/axios';
 import { ChevronLeft, FileText, Download, Receipt, FileCheck2, CreditCard, ExternalLink } from 'lucide-react-native';
 
 export default function InvoicesScreen() {
@@ -20,9 +22,42 @@ export default function InvoicesScreen() {
         router.replace('/(auth)/login');
         return;
       }
-      const res = await apiClient.get('/exhibitor-auth/dashboard', { headers: { Authorization: `Bearer ${token}` } });
-      if (res.data.success) {
-        setData(res.data.data);
+      const dashboardRes = await apiClient.get('/exhibitor-auth/dashboard', { headers: { Authorization: `Bearer ${token}` } });
+      if (dashboardRes.data.success) {
+        const dashboard = dashboardRes.data.data;
+        const overviewRes = await apiClient.get(`/exhibitor-auth/account-overview?id=${dashboard._id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => null);
+        const overview = overviewRes?.data?.success ? overviewRes.data.data : null;
+        const documents = Array.isArray(overview?.recentDocuments) ? overview.recentDocuments : [];
+        const latestProforma = documents.find((doc: any) => doc.documentType === 'Proforma Invoice');
+        const latestInvoice = documents.find((doc: any) => doc.documentType === 'Invoice');
+        const receipts = documents
+          .filter((doc: any) => doc.documentType === 'Payment')
+          .map((doc: any) => ({
+            id: doc.id,
+            _id: doc.id,
+            receiptNo: doc.documentNo,
+            date: doc.date,
+            amount: doc.amount,
+            status: doc.status,
+          }));
+
+        setData({
+          ...dashboard,
+          estimate: latestProforma ? {
+            id: latestProforma.id,
+            estimateNo: latestProforma.documentNo,
+            date: latestProforma.date,
+          } : dashboard.estimate,
+          invoice: latestInvoice ? {
+            id: latestInvoice.id,
+            invoiceNo: latestInvoice.documentNo,
+            date: latestInvoice.date,
+          } : dashboard.invoice,
+          receipts,
+          accountFinancials: overview?.financials,
+        });
       }
     } catch (err) {
       console.log('Error fetching dashboard', err);
@@ -45,10 +80,9 @@ export default function InvoicesScreen() {
   const invoice = data?.invoice || data?.participation?.invoice;
   const receipts = data?.receipts || data?.participation?.receipts || [];
 
-  const total = data?.financeBreakdown?.netPayable || data?.totalPayable || data?.participation?.total || 0;
-  const paid = data?.amountPaid || 0;
-  // Use the actual derived total to compute balance correctly if amountPaid > 0
-  const balance = Math.max(0, total - paid);
+  const total = data?.accountFinancials?.totalDue ?? data?.financeBreakdown?.netPayable ?? data?.totalPayable ?? data?.participation?.total ?? 0;
+  const paid = data?.accountFinancials?.paidAmount ?? data?.amountPaid ?? 0;
+  const balance = data?.accountFinancials?.remainingBalance ?? Math.max(0, total - paid);
 
   const handleView = (type: 'estimate' | 'invoice', doc: any) => {
     if (!doc || !doc.id) {
@@ -67,6 +101,46 @@ export default function InvoicesScreen() {
       return;
     }
     Linking.openURL(url);
+  };
+
+  const handleReceipt = async (receipt: any) => {
+    const receiptId = receipt?._id || receipt?.id;
+    if (!receiptId) {
+      Alert.alert('Not Available', 'Receipt reference is missing.');
+      return;
+    }
+
+    try {
+      const token = await SecureStore.getItemAsync('exhibitorToken');
+      const safeReceiptNo = String(receipt.receiptNo || receiptId).replace(/[^a-z0-9_-]+/gi, '_');
+      const target = `${FileSystem.documentDirectory}Receipt_${safeReceiptNo}.pdf`;
+      const result = await FileSystem.downloadAsync(
+        `${API_URL}/payments/${receiptId}/receipt`,
+        target,
+        {
+          headers: {
+            Authorization: `Bearer ${token || ''}`,
+            'ngrok-skip-browser-warning': 'true',
+          }
+        }
+      );
+
+      if (result.status !== 200) {
+        throw new Error('Receipt download failed');
+      }
+      if (!(await Sharing.isAvailableAsync())) {
+        Alert.alert('Receipt Downloaded', `Receipt saved at ${result.uri}`);
+        return;
+      }
+      await Sharing.shareAsync(result.uri, {
+        mimeType: 'application/pdf',
+        dialogTitle: receipt.receiptNo || 'Payment Receipt',
+        UTI: 'com.adobe.pdf',
+      });
+    } catch (error: any) {
+      console.log('Error opening backend receipt PDF', error);
+      Alert.alert('Receipt Error', error?.message || 'Unable to open payment receipt.');
+    }
   };
 
   return (
@@ -186,7 +260,7 @@ export default function InvoicesScreen() {
                   <Text className="text-slate-500 text-[10px] mt-0.5">{rcpt.date ? new Date(rcpt.date).toLocaleDateString() : 'Date unavailable'} • {cur}{rcpt.amount}</Text>
                 </View>
                 <TouchableOpacity 
-                  onPress={() => router.push(`/document/receipt/${rcpt._id || rcpt.id}` as any)}
+                  onPress={() => handleReceipt(rcpt)}
                   className="bg-slate-50 p-2 rounded-full border border-slate-200"
                 >
                   {/* @ts-ignore */}
