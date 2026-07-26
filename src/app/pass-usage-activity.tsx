@@ -1,6 +1,6 @@
 import '../../global.css';
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, DeviceEventEmitter } from 'react-native';
 import { ChevronLeft, QrCode, Calendar, Clock, AlertCircle, CheckSquare2, Square } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { apiClient } from '@/core/api/axios';
@@ -12,6 +12,8 @@ export default function PassUsageActivityScreen() {
 
     useEffect(() => {
         fetchUsages();
+        const subscription = DeviceEventEmitter.addListener('pass-usage:changed', fetchUsages);
+        return () => subscription.remove();
     }, []);
 
     const fetchUsages = async () => {
@@ -30,16 +32,23 @@ export default function PassUsageActivityScreen() {
         setUpdatingId(String(usage._id));
         try {
             const note = status === 'disputed' ? 'The scan or delivered quantity is incorrect.' : '';
-            const res = await apiClient.patch(`/exhibitor-auth/my-pass-usage/${usage.usageId || usage._id}/acknowledge`, {
+            await apiClient.patch(`/exhibitor-auth/my-pass-usage/${usage.usageId || usage._id}/acknowledge`, {
                 status,
                 note,
                 deliveryId: usage.deliveryId,
             });
             setUsages(current => current.map(item =>
                 String(item._id) === String(usage._id)
-                    ? { ...item, ...res.data.data }
+                    ? {
+                        ...item,
+                        acknowledgementStatus: status,
+                        acknowledgedAt: new Date().toISOString(),
+                        acknowledgementNote: note,
+                    }
                     : item
             ));
+            await fetchUsages();
+            DeviceEventEmitter.emit('pass-usage:changed');
         } catch (error: any) {
             console.log('Failed to acknowledge pass usage', error);
         } finally {

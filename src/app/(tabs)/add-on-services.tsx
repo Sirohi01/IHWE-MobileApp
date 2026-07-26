@@ -587,7 +587,6 @@ export default function AddOnServicesScreen() {
                   }
                   const entitlement = entitlements.find((e: any) => e.accessoryId === item._id);
                   const entitledQty = entitlement?.entitledQty ?? item.includedQty;
-                  const remainingQty = entitlement?.remainingQty ?? item.includedQty;
 
                   return (
                     <View key={item._id} className="flex-row items-center py-3 px-3 mb-3 bg-slate-50 border border-slate-200 rounded-xl">
@@ -605,7 +604,7 @@ export default function AddOnServicesScreen() {
                           <View className="bg-green-100 self-start px-2 py-0.5 rounded-full mr-2">
                             <Text className="text-green-700 font-bold text-[9px] uppercase tracking-widest">Included Free</Text>
                           </View>
-                          <Text className="text-slate-500 font-bold text-[10px]">Entitled: {entitledQty} {item.unit} · Remaining: {remainingQty}</Text>
+                          <Text className="text-slate-500 font-bold text-[10px]">Allocated with stall: {entitledQty} {item.unit}</Text>
                         </View>
                       </View>
                     </View>

@@ -327,6 +327,14 @@ export default function MoreMenuScreen() {
           />
           <MenuItem
             icon={QrCode}
+            title="QR Wallet"
+            subtitle="Open approved passes for venue scanning"
+            iconBg="#eef2ff" iconColor="#4338ca"
+            onPress={() => router.push('/qr-wallet' as any)}
+            disabled={false}
+          />
+          <MenuItem
+            icon={QrCode}
             title="Pass Usage Activity"
             subtitle="View scan history of your passes"
             iconBg="#fef2f2" iconColor="#ef4444"

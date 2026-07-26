@@ -92,7 +92,7 @@ export default function PassesAndHospitalityScreen() {
         if (!acc[key]) acc[key] = { pending: 0, approved: 0, rejected: 0, total: 0 };
         const status = request.status as string;
         (acc[key] as any)[status] = ((acc[key] as any)[status] || 0) + Number(request.quantity || 0);
-        acc[key].total += Number(request.quantity || 0);
+        if (status !== 'rejected') acc[key].total += Number(request.quantity || 0);
         return acc;
     }, {});
 
@@ -117,7 +117,10 @@ export default function PassesAndHospitalityScreen() {
                 return {
                     id: passId, title: config?.title || 'Vehicle Pass', subtitle: config?.subtitle || 'For Exhibitor Vehicles',
                     icon: fb.icon || Car, complimentary: complimentaryTwoWheeler + complimentaryFourWheeler,
-                    used: countsByType[passId]?.approved ?? 0, remaining: Math.max(totalQuota - totalRequested, 0),
+                    used: totalRequested,
+                    approved: countsByType[passId]?.approved ?? 0,
+                    pending: countsByType[passId]?.pending ?? 0,
+                    remaining: Math.max(totalQuota - totalRequested, 0),
                     complimentaryRemaining: remainingTwoWheeler + remainingFourWheeler, totalQuota,
                     price: null, priceTwoWheeler, priceFourWheeler,
                     complimentaryTwoWheeler, complimentaryFourWheeler, remainingTwoWheeler, remainingFourWheeler,
@@ -126,11 +129,12 @@ export default function PassesAndHospitalityScreen() {
             }
             const complimentary = Number(config.complimentaryQuota || 0);
             const totalQuota = Number(config.totalQuota || 10);
-            const used = countsByType[passId]?.approved ?? 0;
             const totalRequested = countsByType[passId]?.total ?? 0;
             return {
                 id: passId, title: config.title, subtitle: config.subtitle,
-                icon: fb.icon || Ticket, complimentary, totalQuota, used,
+                icon: fb.icon || Ticket, complimentary, totalQuota, used: totalRequested,
+                approved: countsByType[passId]?.approved ?? 0,
+                pending: countsByType[passId]?.pending ?? 0,
                 remaining: Math.max(totalQuota - totalRequested, 0),
                 complimentaryRemaining: Math.max(complimentary - totalRequested, 0),
                 price: Number(config.price || 0), maxPerRequest: Number(config.maxPerRequest || 10),
@@ -487,8 +491,9 @@ export default function PassesAndHospitalityScreen() {
                         ) : (
                             <View className="flex-row bg-white/60 rounded-2xl p-1 mb-3">
                                 <View className="flex-1 items-center py-2">
-                                    <Text className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Used</Text>
+                                    <Text className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Claimed</Text>
                                     <Text className="text-lg font-black text-slate-800">{pass.used}</Text>
+                                    {(pass as any).pending > 0 ? <Text className="text-[9px] font-bold text-amber-700">{(pass as any).pending} pending</Text> : null}
                                 </View>
                                 <View className="w-[1px] bg-slate-200/50 my-2" />
                                 <View className="flex-1 items-center py-2">

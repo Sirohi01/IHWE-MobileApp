@@ -3,13 +3,14 @@ import { Stack, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
-import { AppState, Alert, View, StyleSheet } from 'react-native';
+import { AppState, Alert, DeviceEventEmitter, View, StyleSheet } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import * as SplashScreen from 'expo-splash-screen';
+import { io } from 'socket.io-client';
 
 SplashScreen.preventAutoHideAsync();
 import { apiClient } from '@/core/api/axios';
-import { imageUrl } from '@/core/config/env';
+import { imageUrl, SERVER_URL } from '@/core/config/env';
 
 import { usePushNotifications } from '@/core/hooks/usePushNotifications';
 
@@ -17,6 +18,7 @@ export default function RootLayout() {
   const [isVideoFinished, setIsVideoFinished] = useState(false);
   const appState = useRef(AppState.currentState);
   const lastAlertedId = useRef<string | null>(null);
+  const lastPassUsageAlertedId = useRef<string | null>(null);
 
   const player = useVideoPlayer(require('../../assets/video/ihweVideo2.mp4'), p => {
     p.loop = false;
@@ -48,7 +50,8 @@ export default function RootLayout() {
         appState.current.match(/inactive|background/) &&
         nextAppState === 'active'
       ) {
-        checkNewReminders();
+        void checkNewReminders();
+        void checkPendingPassUsage();
       }
       appState.current = nextAppState;
     });
@@ -56,13 +59,14 @@ export default function RootLayout() {
     // Also check on initial mount
     SecureStore.getItemAsync('lastAlertedReminderId').then((id) => {
       lastAlertedId.current = id;
-      checkNewReminders();
+      void checkNewReminders();
     });
     const interval = setInterval(() => {
       if (appState.current === 'active') {
-        checkNewReminders();
+        void checkNewReminders();
+        void checkPendingPassUsage();
       }
-    }, 10000);
+    }, 30000);
 
     return () => {
       subscription.remove();
@@ -72,9 +76,78 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (notification) {
-      checkNewReminders();
+      void checkNewReminders();
+      void checkPendingPassUsage();
     }
   }, [notification]);
+
+  useEffect(() => {
+    let socket: ReturnType<typeof io> | null = null;
+    let cancelled = false;
+    const connectPassActivity = async () => {
+      const token = await SecureStore.getItemAsync('exhibitorToken');
+      if (!token || cancelled) return;
+      const storedData = await SecureStore.getItemAsync('exhibitorData');
+      const parsed = storedData ? JSON.parse(storedData) : null;
+      const exhibitorId = parsed?._id || parsed?.id || getUserIdFromToken(token);
+      if (!exhibitorId || cancelled) return;
+      socket = io(SERVER_URL, {
+        transports: ['websocket', 'polling'],
+        extraHeaders: { 'ngrok-skip-browser-warning': 'true' },
+        reconnection: true,
+        reconnectionDelay: 2000,
+      });
+      socket.on('connect', () => {
+        socket?.emit('join_exhibitor', { exhibitorId, token });
+      });
+      socket.on('pass-usage:pending', () => {
+        void checkPendingPassUsage();
+      });
+    };
+    void connectPassActivity();
+    return () => {
+      cancelled = true;
+      socket?.disconnect();
+    };
+  }, []);
+
+  const checkPendingPassUsage = async () => {
+    try {
+      const token = await SecureStore.getItemAsync('exhibitorToken');
+      if (!token) return;
+      const res = await apiClient.get('/exhibitor-auth/my-pass-usage');
+      const pending = (res.data?.data || []).find((item: any) =>
+        item.acknowledgementStatus === 'pending');
+      if (!pending || String(pending._id) === lastPassUsageAlertedId.current) return;
+      lastPassUsageAlertedId.current = String(pending._id);
+      const quantity = pending.passType === 'lunch'
+        ? `${Number(pending.deliveredQuantity || 0)} lunch item(s)`
+        : `${pending.passType || 'exhibitor'} pass`;
+      Alert.alert(
+        'Confirm pass activity',
+        `${quantity} was recorded by ${pending.markedByName || 'IHWE staff'}. Please confirm this activity.`,
+        [
+          { text: 'View Details', onPress: () => router.push('/pass-usage-activity') },
+          {
+            text: 'Accept',
+            onPress: async () => {
+              try {
+                await apiClient.patch(
+                  `/exhibitor-auth/my-pass-usage/${pending.usageId || pending._id}/acknowledge`,
+                  { status: 'confirmed', deliveryId: pending.deliveryId }
+                );
+                DeviceEventEmitter.emit('pass-usage:changed');
+              } catch {
+                Alert.alert('Could not confirm', 'The server is unavailable. Please retry from Usage Activity.');
+              }
+            }
+          }
+        ]
+      );
+    } catch (_) {
+      // Authentication and transient network errors are retried on the next poll.
+    }
+  };
 
   const checkNewReminders = async () => {
     try {
@@ -99,8 +172,8 @@ export default function RootLayout() {
           }
         }
       }
-    } catch (e) {
-      console.log('Failed to check reminders in foreground', e);
+    } catch (e: any) {
+      console.log('Reminder check deferred:', e?.response?.status || e?.message || 'network unavailable');
     }
   };
 
@@ -196,4 +269,3 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 });
-
