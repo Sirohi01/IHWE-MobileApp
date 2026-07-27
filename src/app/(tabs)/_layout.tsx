@@ -121,6 +121,13 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="my-events"
+          options={{
+            href: null,
+            title: 'My Events'
+          }}
+        />
+        <Tabs.Screen
           name="relationship-manager"
           options={{
             href: null,

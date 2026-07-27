@@ -36,8 +36,13 @@ export default function HomeTab() {
       const token = await SecureStore.getItemAsync('exhibitorToken');
       if (!token) { router.replace('/(auth)/login'); return; }
 
+      // Multi-event support: use whichever registration the exhibitor last
+      // selected on the "My Events" switcher, if they have more than one.
+      const selectedRegId = await SecureStore.getItemAsync('exhibitorSelectedRegId');
+      const dashboardUrl = selectedRegId ? `/exhibitor-auth/dashboard?id=${selectedRegId}` : '/exhibitor-auth/dashboard';
+
       const [res, heroRes] = await Promise.all([
-        apiClient.get('/exhibitor-auth/dashboard', { headers: { Authorization: `Bearer ${token}` } }),
+        apiClient.get(dashboardUrl, { headers: { Authorization: `Bearer ${token}` } }),
         apiClient.get('/hero/all').catch(() => null)
       ]);
 
@@ -71,6 +76,7 @@ export default function HomeTab() {
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync('exhibitorToken');
     await SecureStore.deleteItemAsync('exhibitorData');
+    await SecureStore.deleteItemAsync('exhibitorSelectedRegId');
     router.replace('/(auth)/login');
   };
 

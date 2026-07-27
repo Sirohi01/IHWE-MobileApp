@@ -61,7 +61,12 @@ export default function MyEventTab() {
         return;
       }
 
-      const res = await apiClient.get('/exhibitor-auth/dashboard', { headers: { Authorization: `Bearer ${token}` } });
+      // Multi-event support: use whichever registration the exhibitor last
+      // selected on the "My Events" switcher, if they have more than one.
+      const selectedRegId = await SecureStore.getItemAsync('exhibitorSelectedRegId');
+      const dashboardUrl = selectedRegId ? `/exhibitor-auth/dashboard?id=${selectedRegId}` : '/exhibitor-auth/dashboard';
+
+      const res = await apiClient.get(dashboardUrl, { headers: { Authorization: `Bearer ${token}` } });
       if (res.data.success) {
         const exhibitor = res.data.data;
         setData(exhibitor);

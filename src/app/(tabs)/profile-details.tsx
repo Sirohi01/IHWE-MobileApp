@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Tex
 import { useRouter } from 'expo-router';
 import { UserCircle2, Mail, Phone, MapPin, Building2, FileText, ChevronLeft, Edit3, X, CheckCircle2 } from 'lucide-react-native';
 import { API_URL, apiClient } from '@/core/api/axios';
+import * as SecureStore from 'expo-secure-store';
 
 export default function ProfileDetailsScreen() {
     const router = useRouter();
@@ -44,7 +45,11 @@ export default function ProfileDetailsScreen() {
 
     const fetchProfile = async () => {
         try {
-            const response = await apiClient.get('/exhibitor-auth/dashboard');
+            // Multi-event support: use whichever registration the exhibitor last
+            // selected on the "My Events" switcher, if they have more than one.
+            const selectedRegId = await SecureStore.getItemAsync('exhibitorSelectedRegId');
+            const dashboardUrl = selectedRegId ? `/exhibitor-auth/dashboard?id=${selectedRegId}` : '/exhibitor-auth/dashboard';
+            const response = await apiClient.get(dashboardUrl);
             if (response.data && response.data.data) {
                 const data = response.data.data;
                 setProfile(data);

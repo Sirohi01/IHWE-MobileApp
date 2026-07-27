@@ -30,7 +30,8 @@ import {
   QrCode,
   Menu as MenuIcon,
   PlayCircle,
-  RefreshCcw
+  RefreshCcw,
+  ArrowRightLeft
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
@@ -126,7 +127,11 @@ export default function MoreMenuScreen() {
 
   const fetchData = async () => {
     try {
-      const res = await apiClient.get('/exhibitor-auth/dashboard');
+      // Multi-event support: use whichever registration the exhibitor last
+      // selected on the "My Events" switcher, if they have more than one.
+      const selectedRegId = await SecureStore.getItemAsync('exhibitorSelectedRegId');
+      const dashboardUrl = selectedRegId ? `/exhibitor-auth/dashboard?id=${selectedRegId}` : '/exhibitor-auth/dashboard';
+      const res = await apiClient.get(dashboardUrl);
       if (res.data.success) {
         setData(res.data.data);
       }
@@ -149,6 +154,9 @@ export default function MoreMenuScreen() {
         style: 'destructive',
         onPress: async () => {
           await SecureStore.deleteItemAsync('exhibitorToken');
+          // Clear the multi-event selection too, so a different exhibitor
+          // logging in on this device doesn't inherit a stale registration.
+          await SecureStore.deleteItemAsync('exhibitorSelectedRegId');
           router.replace('/');
         }
       }
@@ -294,6 +302,13 @@ export default function MoreMenuScreen() {
             subtitle="Manage your overall event participation"
             iconBg="#eff6ff" iconColor="#3b82f6"
             onPress={() => router.push('/(tabs)/myevent')}
+          />
+          <MenuItem
+            icon={ArrowRightLeft}
+            title="My Events"
+            subtitle="Registered for more than one expo? Switch here"
+            iconBg="#f0fdf4" iconColor="#16a34a"
+            onPress={() => router.push('/(tabs)/my-events' as any)}
           />
           <MenuItem
             icon={Store}
